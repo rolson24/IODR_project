@@ -4,8 +4,4 @@ django-heroku
 numpy
 pandas
 requests
-json
-io
-plotly.graph_objects
-plotly.express
 dash
