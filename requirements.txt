@@ -3,7 +3,6 @@ gunicorn
 django-heroku
 numpy
 pandas
-urllib.request
 requests
 json
 io
