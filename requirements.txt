@@ -1,0 +1,12 @@
+django
+gunicorn
+django-heroku
+numpy
+pandas
+urllib.request
+requests
+json
+io
+plotly.graph_objects
+plotly.express
+dash
