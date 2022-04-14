@@ -24,7 +24,6 @@ tsBaseUrl = r'https://api.thingspeak.com/channels'
 # 4: temperature readings for all devices
 devNames = ['IODR #1', 'IODR #2', 'IODR #3']
 originalNames = ['tube 1', 'tube 2', 'tube 3', 'tube 4', 'tube 5', 'tube 6', 'tube 7', 'tube 8']
-oldNames = ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8']
 newNames = ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8']
 
 dataFrames = []
@@ -57,14 +56,13 @@ for i in range(4):
     df2.set_index('time', inplace = True)
     dataFrames.append(df2)
 
-def get_OD_data(device, newNames, oldNames):
+def get_OD_data(device, newNames):
     df = dataFrames[device]
     # rename tubes on update
     tubeNamesDict = {}
     i=0;
     for col in df.columns:
         df.rename(columns = {col : newNames[i]}, inplace = True)
-        print(oldNames[i], newNames[i])
         i += 1
     
     return df
@@ -251,7 +249,6 @@ app.layout = html.Div([
     State('tube-7-name', 'value'),
     State('tube-8-name', 'value'))
 def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8):
-    oldNames = newNames.copy()
     # put the new names into the list 
     newNames[0] = name_1 if (name_1 != None and name_1 != "") else originalNames[0]
     newNames[1] = name_2 if (name_2 != None and name_2 != "") else originalNames[1]
@@ -271,12 +268,12 @@ def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, n
     
     # default data with no device selected
     if device_sel is None:
-        ODdf = get_OD_data(0, newNames, oldNames)
+        ODdf = get_OD_data(0, newNames)
         TEMPdf = get_temp_data(0)
         figure1.update_layout(title="IODR #1")
     # selected device data
     else:
-        ODdf = get_OD_data(devNames.index(device_sel), newNames, oldNames)
+        ODdf = get_OD_data(devNames.index(device_sel), newNames)
         TEMPdf = get_temp_data(devNames.index(device_sel))
         figure1.update_layout(title=device_sel)
     
