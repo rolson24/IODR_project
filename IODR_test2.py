@@ -61,10 +61,11 @@ def get_OD_data(device, newNames, oldNames):
     df = dataFrames[device]
     # rename tubes on update
     tubeNamesDict = {}
-    for i in range(len(newNames)):
-        df.rename(columns = {oldNames[i] : newNames[i]}, inplace = True)
+    i=0;
+    for col in df.columns:
+        df.rename(columns = {col : newNames[i]}, inplace = True)
         print(oldNames[i], newNames[i])
-        #tubeNamesDict[oldNames[i]] = newNames[i]
+        i += 1
     
     return df
 
