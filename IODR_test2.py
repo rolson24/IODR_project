@@ -309,7 +309,9 @@ def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, n
     figure1.update_yaxes(range=[30, 60], row=2, col=1)
     figure1.update_layout(
         height=1000,
-        font_family='Open Sans')
+        font=dict(
+            family='Open Sans',
+            size=14))
 
     return figure1
 
