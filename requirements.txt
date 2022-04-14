@@ -1,7 +1,7 @@
-django
 gunicorn
 django-heroku
 numpy
 pandas
 requests
 dash
+whitenoise==5.2.0

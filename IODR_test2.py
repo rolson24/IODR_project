@@ -1,5 +1,6 @@
 from dash import Dash, dcc, html, Input, Output, State
 from plotly.subplots import make_subplots
+from whitenoise import WhiteNoise
 
 
 import numpy as np
@@ -127,6 +128,10 @@ config = {
 
 
 app = Dash(__name__)
+
+server = app.server
+
+server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/c')
 
 app.layout = html.Div([
     html.Div(children=[
@@ -309,5 +314,5 @@ def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, n
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, host='0.0.0.0', port=8050)
 
