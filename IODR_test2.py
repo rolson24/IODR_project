@@ -108,6 +108,7 @@ server = app.server
 server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/c')
 
 app.layout = html.Div([
+    html.H1("IODR Data Browser", style={'textAlign': 'center'}),
     # get data button
     html.Div(children=[
 	    html.Button(
@@ -307,7 +308,9 @@ def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, n
     figure1.update_yaxes(matches=None)
     # set the range for the temperature y-axis
     figure1.update_yaxes(range=[30, 60], row=2, col=1)
-    figure1.update_layout(height=1000)
+    figure1.update_layout(
+        height=1000,
+        font_family='Open Sans')
 
     return figure1
 
