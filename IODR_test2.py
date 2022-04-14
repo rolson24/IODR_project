@@ -104,7 +104,7 @@ app = Dash(__name__)
 
 server = app.server
 
-# for herpku server
+# for heroku server
 server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/c')
 
 app.layout = html.Div([
@@ -232,8 +232,7 @@ app.layout = html.Div([
 	# graph html component
 	html.Div(
 	    dcc.Graph(
-	        id='graph1',
-	        config=config)
+	        id='graph1')
 	)
 ])
 
