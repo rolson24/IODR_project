@@ -290,10 +290,12 @@ def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, n
     TEMPdfcolumns = list(TEMPdf.columns)
     for col in ODdf.columns:
         print("add trace "+str(col))
-        figure1.add_trace(go.Scattergl(x=ODdf.index, y=ODdf[col], mode='markers', marker_size=2, name=col), 1, 1)
+        figure1.add_trace(go.Scattergl(x=ODdf.index, y=ODdf[col], mode='markers', marker_size=5, name=col), 1, 1)
     for col in TEMPdf.columns:
-        figure1.add_trace(go.Scattergl(x=TEMPdf.index, y=TEMPdf[col], mode='markers', marker_size=2, name=col), 2, 1)
+        figure1.add_trace(go.Scattergl(x=TEMPdf.index, y=TEMPdf[col], mode='markers', marker_size=5, name=col), 2, 1)
     figure1.update_xaxes(matches='x')
+    figure1.update_yaxes(matches=None)
+    figure1.update_yaxes(range=[30, 60], row=2, col=1)
     figure1.update_layout(height=600)
     # figure1=px.scatter(get_OD_data(0, newNames, oldNames) if device_sel is None else get_OD_data(devNames.index(device_sel), newNames, oldNames),
 #             x = 'time',
