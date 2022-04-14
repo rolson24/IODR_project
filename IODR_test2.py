@@ -276,7 +276,7 @@ def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, n
     newNames[5] = name_6 if name_6 is not None else newNames[5]
     newNames[6] = name_7 if name_7 is not None else newNames[6]
     newNames[7] = name_8 if name_8 is not None else newNames[7]
-
+    print("update_graph")
     figure1 = make_subplots(rows=2, cols=1, subplot_titles=("OD data", "Temperature"), row_heights=[0.7, 0.3])
     if device_sel is None:
         ODdf = get_OD_data(0, newNames, oldNames)
