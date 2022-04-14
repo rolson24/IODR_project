@@ -23,20 +23,22 @@ tsBaseUrl = r'https://api.thingspeak.com/channels'
 # 3: 
 # 4: temperature readings for all devices
 devNames = ['IODR #1', 'IODR #2', 'IODR #3']
+originalNames = ['tube 1', 'tube 2', 'tube 3', 'tube 4', 'tube 5', 'tube 6', 'tube 7', 'tube 8']
 oldNames = ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8']
-newNames = ['tube 1', 'tube 2', 'tube 3', 'tube 4', 'tube 5', 'tube 6', 'tube 7', 'tube 8']
+newNames = ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8']
+
+dataFrames = []
 
 chIDs = [405675, 441742, 469909, 890567]
 readAPIkeys = ['18QZSI0X2YZG8491', 'CV0IFVPZ9ZEZCKA8', '27AE8M5DG8F0ZE44', 'M7RIW6KSSW15OGR1']
 
-
-def get_OD_data(device, newNames, oldNames):
+for i in range(4):
     # select the channel ID and read API key depending on which device is being used
     #chID = chIDs[devNum-1]
-    chID = chIDs[device]
+    chID = chIDs[i]
 
     #readAPIkey = readAPIkeys[devNum-1]
-    readAPIkey = readAPIkeys[device]
+    readAPIkey = readAPIkeys[i]
 
     # get data from Thingspeak
     myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=8000'.format(channel_id = chID)
@@ -53,46 +55,29 @@ def get_OD_data(device, newNames, oldNames):
     df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
     df2 = df2.drop('created_at', axis = 'columns')
     df2.set_index('time', inplace = True)
+    dataFrames.append(df2)
 
+def get_OD_data(device, newNames, oldNames):
+    df = dataFrames[device]
     # rename tubes on update
     tubeNamesDict = {}
     for i in range(len(newNames)):
-        df2.rename(columns = {oldNames[i] : newNames[i]}, inplace = True)
+        df.rename(columns = {oldNames[i] : newNames[i]}, inplace = True)
         print(oldNames[i], newNames[i])
         #tubeNamesDict[oldNames[i]] = newNames[i]
     
-    return df2
+    return df
 
 
 def get_temp_data(device):
-    chID = chIDs[3]
-
-    #readAPIkey = readAPIkeys[devNum-1]
-    readAPIkey = readAPIkeys[3]
-    
-    # get data from Thingspeak
-    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=8000'.format(channel_id = chID)
-    #myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?start=2021-09-20'.format(channel_id = chID)
-    r = requests.get(myUrl)
-
-    # put the thingspeak data in a dataframe
-    df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
-
-    #display(df.head())
-    df2 = df.drop('entry_id', axis = 'columns')
-
-    # convert time string to datetime, and switch from UTC to Eastern time
-    df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
-    df2 = df2.drop('created_at', axis = 'columns')
-    df2.set_index('time', inplace = True)
-    
+    df = dataFrames[3]
     # format data for temperature, inlcude only temperature that matches the device selected
     if(device == 0):
-        df3 = df2.drop(['field3', 'field4', 'field5', 'field6'], axis = 'columns')
+        df2 = df.drop(['field3', 'field4', 'field5', 'field6'], axis = 'columns')
     elif (device == 1):
-        df3 = df2.drop(['field1', 'field2', 'field5', 'field6'], axis = 'columns')
+        df2 = df.drop(['field1', 'field2', 'field5', 'field6'], axis = 'columns')
     else:
-        df3 = df2.drop(['field1', 'field2', 'field3', 'field4'], axis = 'columns')
+        df2 = df.drop(['field1', 'field2', 'field3', 'field4'], axis = 'columns')
     
     # rename columns for graphing
     tempNames = {
@@ -103,9 +88,9 @@ def get_temp_data(device):
            'field5' : 'Dev #3 int',
            'field6' : 'Dev #3 ext'
            }
-    df3.rename(columns = tempNames, inplace=True)
+    df2.rename(columns = tempNames, inplace=True)
     
-    return df3
+    return df2
 
 # can edit title and legend names
 config = {
@@ -265,15 +250,16 @@ app.layout = html.Div([
     State('tube-7-name', 'value'),
     State('tube-8-name', 'value'))
 def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8):
+    oldNames = newNames.copy()
     # put the new names into the list 
-    newNames[0] = name_1 if (name_1 != None and name_1 != "") else newNames[0]
-    newNames[1] = name_2 if (name_2 != None and name_2 != "") else newNames[1]
-    newNames[2] = name_3 if (name_3 != None and name_3 != "") else newNames[2]
-    newNames[3] = name_4 if (name_4 != None and name_4 != "") else newNames[3]
-    newNames[4] = name_5 if (name_5 != None and name_5 != "") else newNames[4]
-    newNames[5] = name_6 if (name_6 != None and name_6 != "") else newNames[5]
-    newNames[6] = name_7 if (name_7 != None and name_7 != "") else newNames[6]
-    newNames[7] = name_8 if (name_8 != None and name_8 != "") else newNames[7]
+    newNames[0] = name_1 if (name_1 != None and name_1 != "") else originalNames[0]
+    newNames[1] = name_2 if (name_2 != None and name_2 != "") else originalNames[1]
+    newNames[2] = name_3 if (name_3 != None and name_3 != "") else originalNames[2]
+    newNames[3] = name_4 if (name_4 != None and name_4 != "") else originalNames[3]
+    newNames[4] = name_5 if (name_5 != None and name_5 != "") else originalNames[4]
+    newNames[5] = name_6 if (name_6 != None and name_6 != "") else originalNames[5]
+    newNames[6] = name_7 if (name_7 != None and name_7 != "") else originalNames[6]
+    newNames[7] = name_8 if (name_8 != None and name_8 != "") else originalNames[7]
     
     # make the subplots object
     figure1 = make_subplots(
