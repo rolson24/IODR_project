@@ -1,1 +1,1 @@
-web: gunicorn IODR_test2
+web: gunicorn IODR_test2:server
