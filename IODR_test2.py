@@ -80,12 +80,12 @@ def get_temp_data(device):
     
     # rename columns for graphing
     tempNames = {
-           'field1' : 'Dev #1 int',
-           'field2' : 'Dev #1 ext',
-           'field3' : 'Dev #2 int',
-           'field4' : 'Dev #2 ext',
-           'field5' : 'Dev #3 int',
-           'field6' : 'Dev #3 ext'
+           'field1' : 'Temp Int',
+           'field2' : 'Temp Ext',
+           'field3' : 'Temp Int',
+           'field4' : 'Temp Ext',
+           'field5' : 'Temp Int',
+           'field6' : 'Temp Ext'
            }
     df2.rename(columns = tempNames, inplace=True)
     
@@ -115,7 +115,7 @@ app.layout = html.Div([
 	        id='get-data-button',
 	        style={
 	            'flex': 1,
-	            'marginLeft': 30}
+	            'marginLeft': '50%'}
 	        )],
 	    style={
 	        'flex': 1,
@@ -264,7 +264,8 @@ def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, n
         rows=2,
         cols=1,
         subplot_titles=("OD data", "Temperature"),
-        row_heights=[0.7, 0.3])
+        row_heights=[0.8, 0.2],
+        vertical_spacing = 0.08)
     
     # default data with no device selected
     if device_sel is None:
@@ -306,7 +307,7 @@ def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, n
     figure1.update_yaxes(matches=None)
     # set the range for the temperature y-axis
     figure1.update_yaxes(range=[30, 60], row=2, col=1)
-    figure1.update_layout(height=600)
+    figure1.update_layout(height=1000)
 
     return figure1
 
