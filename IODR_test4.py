@@ -261,7 +261,9 @@ app.layout = html.Div([
 	    the graph and the graph will return to the original view. You can also move the 
 	    graph horizontally and vertically by clicking and dragging on the labels of the 
 	    axes. To turn individual traces off and on, click the name in the legend of the 
-	    graph. To turn all the traces off but one, double click on the trace you want on.
+	    graph. To turn all the traces off but one, double click on the trace you want on. 
+	    To save a picture of the graph, hover your mouse over the graph and click the 
+	    camera icon in the upper right-hand corner.
 	    ''',
 	    style={'marginLeft': 30, 'marginRight': 30, 'marginBottom': 30})
 ])
