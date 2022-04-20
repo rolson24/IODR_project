@@ -67,7 +67,8 @@ def get_OD_data(device, newNames):
     # rename tubes on update
     i=0;
     for col in df2.columns:
-        df.rename(columns = {col : newNames[i]}, inplace = True)
+        df2.rename(columns = {col : newNames[i]}, inplace = True)
+        print(newNames[i])
         i += 1
     
     return df2
@@ -291,7 +292,7 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
     newNames[5] = name_6 if (name_6 != None and name_6 != "") else originalNames[5]
     newNames[6] = name_7 if (name_7 != None and name_7 != "") else originalNames[6]
     newNames[7] = name_8 if (name_8 != None and name_8 != "") else originalNames[7]
-    
+    print(newNames)
     # make the subplots object
     figure1 = make_subplots(
         rows=2,
