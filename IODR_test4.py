@@ -251,21 +251,43 @@ app.layout = html.Div([
 	),
 	html.H3("Instructions for use:", style={'textAlign': 'center'}),
 	html.Br(),
-	html.Div(
+	html.Div(children=[
 	    '''
 	    To use this dashboard, first input the names of the bateria strains that 
-	    correspond to each tube. Then click the button labeled with the device you want
-	    to view data from. Doing so will pull the most recent 8000 data points
-	    (1000 per tube) and display them on the scatter plot. To zoom in on a set of
-	    points, simply click and drag on the graph and a selection box will appear
-	    showing the frame that will be zoomed to. To zoom back out, double click on 
-	    the graph and the graph will return to the original view. You can also move the 
-	    graph horizontally and vertically by clicking and dragging on the labels of the 
-	    axes. To turn individual traces off and on, click the name in the legend of the 
-	    graph. To turn all the traces off but one, double click on the trace you want on. 
-	    To save a picture of the graph, hover your mouse over the graph and click the 
-	    camera icon in the upper right-hand corner.
-	    ''',
+	    correspond to each tube. Then click the button labeled with the device you want 
+	    to view data from. Doing so will pull the most recent 8000 data points 
+	    (1000 per tube) and display them on the scatter plot. Note, this data does not 
+	    update in real-time. In order to see the latest data, click the device button 
+	    again.''',
+	    html.H5("Zoom"),
+	    '''To zoom in on a set of points, simply click and drag on the graph and a 
+	    selection box will appear showing the frame that will be zoomed to. To zoom back 
+	    out, double click on the graph and the graph will return to the original view.''',
+	    html.H5("Pan"),
+	    '''To pan the graph horizontally and vertically, click and drag on the labels of 
+	    the axes.''',
+	    html.H5("Show/Hide traces"),
+	    '''To turn individual traces off and on, click the name of the trace you want to 
+	    toggle in the legend of the graph. To turn all the traces off but one, double 
+	    click on the trace you want on. To turn all of the traces on, double click on any 
+	    of the trace names in the legend.''',
+	    html.H5("Save a picture"),
+	    '''To save a picture of the graph, hover your mouse over the graph and click the 
+	    camera icon in the upper right-hand corner.''',
+	    html.H5("Operational notes"),
+	    '''The app times out after 30 minutes of inactivity. You are still able to view 
+	    the current graph, but you must refresh the page to get the data from another 
+	    device.''',
+	    html.H5(children=['''Dashboard created by Raif Olson advised by Daniel Olson. 
+	    Full code at:  ''',
+	        html.A(
+	            "Github",
+	            href="https://github.com/rolson24/IODR_project",
+	            target="_blank",
+	            rel="noopener noreferrer"
+	        )]
+	    ),
+	    ],
 	    style={'marginLeft': 30, 'marginRight': 30, 'marginBottom': 30})
 ])
 
