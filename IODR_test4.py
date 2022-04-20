@@ -256,9 +256,9 @@ app.layout = html.Div([
 	    To use this dashboard, first input the names of the bateria strains that 
 	    correspond to each tube. Then click the button labeled with the device you want 
 	    to view data from. Doing so will pull the most recent 8000 data points 
-	    (1000 per tube) and display them on the scatter plot. Note, this data does not 
-	    update in real-time. In order to see the latest data, click the device button 
-	    again.''',
+	    (1000 per tube) and display them on the scatter plot. This process takes about 
+	    3 seconds to display the graph Note, this data does not update in real-time. 
+	    In order to see the latest data, click the device button again.''',
 	    html.H5("Zoom"),
 	    '''To zoom in on a set of points, simply click and drag on the graph and a 
 	    selection box will appear showing the frame that will be zoomed to. To zoom back 
