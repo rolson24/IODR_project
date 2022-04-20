@@ -1,4 +1,4 @@
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, dcc, html, Input, Output, State, callback_context
 from plotly.subplots import make_subplots
 from whitenoise import WhiteNoise
 
@@ -31,13 +31,22 @@ dataFrames = []
 chIDs = [405675, 441742, 469909, 890567]
 readAPIkeys = ['18QZSI0X2YZG8491', 'CV0IFVPZ9ZEZCKA8', '27AE8M5DG8F0ZE44', 'M7RIW6KSSW15OGR1']
 
-for i in range(4):
+
+def get_OD_data(device, newNames):
+    """Returns a data frame containing the OD data for the specified device.
+    
+    Arguments:
+    device -- int device number (0-2)
+    newNames -- list of strings for the names of each tube (expected length 8)
+    
+    relies on global variables chIDs and readAPIkeys
+    """
     # select the channel ID and read API key depending on which device is being used
     #chID = chIDs[devNum-1]
-    chID = chIDs[i]
+    chID = chIDs[device]
 
     #readAPIkey = readAPIkeys[devNum-1]
-    readAPIkey = readAPIkeys[i]
+    readAPIkey = readAPIkeys[device]
 
     # get data from Thingspeak
     myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=8000'.format(channel_id = chID)
@@ -54,29 +63,54 @@ for i in range(4):
     df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
     df2 = df2.drop('created_at', axis = 'columns')
     df2.set_index('time', inplace = True)
-    dataFrames.append(df2)
 
-def get_OD_data(device, newNames):
-    df = dataFrames[device]
     # rename tubes on update
-    tubeNamesDict = {}
     i=0;
-    for col in df.columns:
+    for col in df2.columns:
         df.rename(columns = {col : newNames[i]}, inplace = True)
         i += 1
     
-    return df
+    return df2
 
 
 def get_temp_data(device):
-    df = dataFrames[3]
+    """Returns a data frame containing the temperature data for the specified device
+    
+    Arguments:
+    device -- int device number (0-2)
+    
+    relies on global variables chIDs and readAPIkeys
+    """
+    # select the channel ID and read API key depending on which device is being used
+    #chID = chIDs[devNum-1]
+    chID = chIDs[3]
+
+    #readAPIkey = readAPIkeys[devNum-1]
+    readAPIkey = readAPIkeys[3]
+
+    # get data from Thingspeak
+    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=8000'.format(channel_id = chID)
+    #myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?start=2021-09-20'.format(channel_id = chID)
+    #print(myUrl)
+    r = requests.get(myUrl)
+
+    # put the thingspeak data in a dataframe
+    df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
+
+    df2 = df.drop('entry_id', axis = 'columns')
+
+    # convert time string to datetime, and switch from UTC to Eastern time
+    df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
+    df2 = df2.drop('created_at', axis = 'columns')
+    df2.set_index('time', inplace = True)
+
     # format data for temperature, inlcude only temperature that matches the device selected
     if(device == 0):
-        df2 = df.drop(['field3', 'field4', 'field5', 'field6'], axis = 'columns')
+        df3 = df2.drop(['field3', 'field4', 'field5', 'field6'], axis = 'columns')
     elif (device == 1):
-        df2 = df.drop(['field1', 'field2', 'field5', 'field6'], axis = 'columns')
+        df3 = df2.drop(['field1', 'field2', 'field5', 'field6'], axis = 'columns')
     else:
-        df2 = df.drop(['field1', 'field2', 'field3', 'field4'], axis = 'columns')
+        df3 = df2.drop(['field1', 'field2', 'field3', 'field4'], axis = 'columns')
     
     # rename columns for graphing
     tempNames = {
@@ -87,9 +121,9 @@ def get_temp_data(device):
            'field5' : 'Temp Int',
            'field6' : 'Temp Ext'
            }
-    df2.rename(columns = tempNames, inplace=True)
+    df3.rename(columns = tempNames, inplace=True)
     
-    return df2
+    return df3
 
 # can edit title and legend names
 config = {
@@ -110,114 +144,126 @@ server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/c')
 app.layout = html.Div([
     html.H1("IODR Data Browser", style={'textAlign': 'center'}),
     # get data button
-    html.Div(children=[
-	    html.Button(
-	        'Get Data',
-	        id='get-data-button',
-	        style={
-	            'flex': 1,
-	            'marginLeft': '50%'}
-	        )],
+    html.Div(
+        children=[
+	        html.Button(
+	            'IODR #1',
+	            id='IODR1-button',
+	            style={
+	                'flex': 1,
+	                'marginLeft': '50%',
+	                'marginTop': 15
+	            }
+	        ),
+	        html.Button(
+	            'IODR #2',
+	            id='IODR2-button',
+	            style={
+	                'flex': 1,
+	                'marginLeft': '50%',
+	                'marginTop': 15
+	            }
+	        ),
+	        html.Button(
+	            'IODR #3',
+	            id='IODR3-button',
+	            style={
+	                'flex': 1,
+	                'marginLeft': '50%',
+	                'marginTop': 15
+	            }
+	        )
+	    ],
 	    style={
 	        'flex': 1,
 	        'width': '30%',
 	        'height': 100,
-	        'float': 'right',
-	        'marginTop': 50}
-	),
-	# device selector dropdown
-	html.Div(children=[
-	    html.Label('Device'),
-	    dcc.Dropdown(devNames, id='device-selector')],
-	    style={
-	        'padding': 10,
-	        'flex': 1,
-	        'textAlign': 'center',
-	        'width': '30%',
-	        'height': 100,
-	        'float': 'left'
+	        'float': 'left',
+	        'marginTop': 50
 	    }
 	),
+	# device selector dropdown
 	# table to input tube names
 	html.Div(children=[
 	    html.Div(children=[
 	        html.Label('Tube')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'left', 'textAlign': 'center'}
+	        className='tube-title'
 	    ),
+	    
 	    html.Div(children=[
 	        html.Label('Name')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'right'}
+	        className='name-title'
 	    ),
 	    
 	    html.Div(children=[
 	        html.Label('1')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'left', 'textAlign': 'center'}
+	        className='tube-num-label'
 	    ),
 	    html.Div(children=[
 	        dcc.Input(id='tube-1-name')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'right'}
+	        className='tube-input'
 	    ),
 	    
 	    html.Div(children=[
 	        html.Label('2')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'left', 'textAlign': 'center'}
+	        className='tube-num-label'
 	    ),
 	    html.Div(children=[
 	        dcc.Input(id='tube-2-name')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'right'}
+	        className='tube-input'
 	    ),
 	    
 	    html.Div(children=[
 	        html.Label('3')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'left', 'textAlign': 'center'}
+	        className='tube-num-label'
 	    ),
 	    html.Div(children=[
 	        dcc.Input(id='tube-3-name')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'right'}
+	        className='tube-input'
 	    ),
 	    
 	    html.Div(children=[
 	        html.Label('4')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'left', 'textAlign': 'center'}
+	        className='tube-num-label'
 	    ),
 	    html.Div(children=[
 	        dcc.Input(id='tube-4-name')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'right'}
+	        className='tube-input'
 	    ),
 	    
 	    html.Div(children=[
 	        html.Label('5')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'left', 'textAlign': 'center'}
+	        className='tube-num-label'
 	    ),
 	    html.Div(children=[
 	        dcc.Input(id='tube-5-name')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'right'}
+	        className='tube-input'
 	    ),
 	    
 	    html.Div(children=[
 	        html.Label('6')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'left', 'textAlign': 'center'}
+	        className='tube-num-label'
 	    ),
 	    html.Div(children=[
 	        dcc.Input(id='tube-6-name')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'right'}
+	        className='tube-input'
 	    ),
 	    
 	    html.Div(children=[
 	        html.Label('7')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'left', 'textAlign': 'center'}
+	        className='tube-num-label'
 	    ),
 	    html.Div(children=[
 	        dcc.Input(id='tube-7-name')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'right'}
+	        className='tube-input'
 	    ),
 	    html.Div(children=[
 	        html.Label('8')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'left', 'textAlign': 'center'}
+	        className='tube-num-label'
 	    ),
 	    html.Div(children=[
 	        dcc.Input(id='tube-8-name')],
-	        style={'flex': 1, 'width': '48%', 'height': 20, 'float': 'right'}
+	        className='tube-input'
 	    )
 	    ],
 	    style={
@@ -225,7 +271,7 @@ app.layout = html.Div([
 	        'flex': 1,
 	        'width': '30%',
 	        'height': 200,
-	        'marginLeft': '33%'
+	        'marginLeft': '50%'
 	    }
 	),
 	html.Br(),
@@ -236,13 +282,26 @@ app.layout = html.Div([
 	),
 	html.H3("Instructions for use:", style={'textAlign': 'center'}),
 	html.Br(),
-	html.Div("To use this dashboard, ")
+	html.Div(
+	    '''
+	    To use this dashboard, first input the names of the bateria strains that 
+	    correspond to each tube. Then click the button labeled with the device you want
+	    to view data from. Doing so will pull the most recent 8000 data points
+	    (1000 per tube) and display them on the scatter plot. To zoom in on a set of
+	    points, simply click and drag on the graph and a selection box will appear
+	    showing the frame that will be zoomed to. To zoom back out, double click on 
+	    the graph and the graph will return to the original view. You can also move the 
+	    graph horizontally and vertically by clicking and dragging on the labels of the 
+	    axes. To turn individual traces off and on, click the name in the legend of the 
+	    graph. To turn all the traces off but one, double click on the trace you want on.
+	    ''', style={'marginLeft': 30, 'marginRight': 30, 'marginBottom': 30})
 ])
 
 @app.callback(
     Output('graph1', 'figure'),
-    Input('get-data-button', 'n_clicks'),
-    State('device-selector', 'value'),
+    Input('IODR1-button', 'n_clicks'),
+    Input('IODR2-button', 'n_clicks'),
+    Input('IODR3-button', 'n_clicks'),
     State('tube-1-name', 'value'),
     State('tube-2-name', 'value'),
     State('tube-3-name', 'value'),
@@ -251,7 +310,7 @@ app.layout = html.Div([
     State('tube-6-name', 'value'),
     State('tube-7-name', 'value'),
     State('tube-8-name', 'value'))
-def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8):
+def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8):
     # put the new names into the list 
     newNames[0] = name_1 if (name_1 != None and name_1 != "") else originalNames[0]
     newNames[1] = name_2 if (name_2 != None and name_2 != "") else originalNames[1]
@@ -269,17 +328,24 @@ def update_graph(n_clicks, device_sel, name_1, name_2, name_3, name_4, name_5, n
         subplot_titles=("OD data", "Temperature"),
         row_heights=[0.8, 0.2],
         vertical_spacing = 0.08)
-    
-    # default data with no device selected
-    if device_sel is None:
-        ODdf = get_OD_data(0, newNames)
-        TEMPdf = get_temp_data(0)
+    # checks which button was pressed
+    changed_id = [p['prop_id'] for p in callback_context.triggered][0]
+    if 'IODR1-button' in changed_id:
+        device = 0
         figure1.update_layout(title="IODR #1")
-    # selected device data
+    elif 'IODR2-button' in changed_id:
+        device = 1
+        figure1.update_layout(title="IODR #2")
+    elif 'IODR3-button' in changed_id:
+        device = 2
+        figure1.update_layout(title="IODR #3")
     else:
-        ODdf = get_OD_data(devNames.index(device_sel), newNames)
-        TEMPdf = get_temp_data(devNames.index(device_sel))
-        figure1.update_layout(title=device_sel)
+        device = 0
+        figure1.update_layout(title="IODR #1")
+    
+    # retrieve the data from Thingspeak
+    ODdf = get_OD_data(device, newNames)
+    TEMPdf = get_temp_data(device)
     
     # add the traces of each tube
     for col in ODdf.columns:

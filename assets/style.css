@@ -1,0 +1,22 @@
+.tube-title {
+    flex: 1;
+    width: 45%;
+    height: 20px;
+    float: left;
+    text-align: right;
+    margin-right: 2%;
+}
+.name-title {
+    text-align: left;
+}
+.tube-num-label {
+    text-align: center;
+}
+.tube-input {
+    text-align: left;
+}
+Button {
+    flex: 1;
+    margin-left: 50%;
+	margin-top: 15px;
+}
