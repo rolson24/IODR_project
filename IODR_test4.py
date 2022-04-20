@@ -349,9 +349,7 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
                 y=ODdf[col],
                 mode='markers',
                 marker_size=5,
-                name=col,
-                legendgroup="OD traces",
-                legendgrouptitle_text="OD traces"),
+                name=col),
             row = 1,
             col = 1)
     # add the traces of the temperature
@@ -379,7 +377,10 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
         font=dict(
             family='Open Sans',
             size=14
-        ))
+        ),
+        legend_itemdoubleclick='toggleothers',
+        legend_groupclick='toggleitem',
+        legend_itemsizing='constant')
 
     return figure1
 
