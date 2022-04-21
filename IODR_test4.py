@@ -256,7 +256,7 @@ app.layout = html.Div([
 	    the axes.''',
 	    html.H5("Show/Hide traces"),
 	    '''To turn individual traces off and on, click the name of the trace you want to 
-	    toggle in the legend of the graph. To turn all the traces off but one, double 
+	    toggle in the legend of the graph. To turn all the traces off, double 
 	    click on the trace you want on. To turn all of the traces on, double click on any 
 	    of the trace names in the legend.''',
 	    html.H5("Save a picture"),
@@ -339,6 +339,8 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
                 marker_size=5,
                 name=col,
                 meta=col,
+                legendgroup="OD traces",
+                legendgrouptitle_text="OD traces",
                 hovertemplate='Time: %{x}' +
                 '<br>OD: %{y}<br>' +
                 'Trace: %{meta}<br>'+
@@ -379,6 +381,7 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
         legend_itemdoubleclick='toggleothers',
         legend_groupclick='toggleitem',
         legend_itemsizing='constant',
+        legend_tracegroupgap=480,
         hoverlabel_align='right')
 
     return figure1
