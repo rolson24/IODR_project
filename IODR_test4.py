@@ -354,8 +354,13 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
                 mode='markers',
                 marker_size=5,
                 name=col,
+                meta=col,
                 legendgroup="Temp traces",
-                legendgrouptitle_text="Temperature traces"), 
+                legendgrouptitle_text="Temperature traces",
+                hovertemplate='Time: %{x}' +
+                '<br>Temp: %{y}<br>' +
+                'Trace: %{meta}<br>'+
+                '<extra></extra>'), 
             row = 2,
             col = 1)
     
