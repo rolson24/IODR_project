@@ -1,3 +1,23 @@
+* {
+    font-family: Arial, Helvetica, sans-serif, verdana;
+}
+
+#button-div {
+	flex: 1;
+	width: 30%;
+	height: 100;
+	float: left;
+	margin-top: 50;
+}
+
+#tube-name-table {
+    padding: 10;
+	flex: 1;
+	width: 30%;
+	height: 200;
+	margin-left: 50%;
+}
+
 .tube-title {
     flex: 1;
     width: 45%;

@@ -82,8 +82,7 @@ def get_temp_data(device):
     
     relies on global variables chIDs and readAPIkeys
     """
-    # select the channel ID and read API key depending on which device is being used
-    #chID = chIDs[devNum-1]
+    # select the channel ID and read API key for temperature data
     chID = chIDs[3]
 
     #readAPIkey = readAPIkeys[devNum-1]
@@ -160,13 +159,7 @@ app.layout = html.Div([
 	            id='IODR3-button'
 	        )
 	    ],
-	    style={
-	        'flex': 1,
-	        'width': '30%',
-	        'height': 100,
-	        'float': 'left',
-	        'marginTop': 50
-	    }
+	    id='button-div'
 	),
 	# device selector dropdown
 	# table to input tube names
@@ -235,15 +228,10 @@ app.layout = html.Div([
 	            )
 	        ])
 	    ])],
-	    style={
-	        'padding': 10,
-	        'flex': 1,
-	        'width': '30%',
-	        'height': 200,
-	        'marginLeft': '50%'
-	    }
+	    id='tube-name-table'
 	),
 	html.Br(),
+	
 	# graph html component
 	html.Div(
 	    dcc.Graph(
@@ -349,7 +337,12 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
                 y=ODdf[col],
                 mode='markers',
                 marker_size=5,
-                name=col),
+                name=col,
+                meta=col,
+                hovertemplate='Time: %{x}' +
+                '<br>OD: %{y}<br>' +
+                'Trace: %{meta}<br>'+
+                '<extra></extra>'),
             row = 1,
             col = 1)
     # add the traces of the temperature
@@ -380,7 +373,8 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
         ),
         legend_itemdoubleclick='toggleothers',
         legend_groupclick='toggleitem',
-        legend_itemsizing='constant')
+        legend_itemsizing='constant',
+        hoverlabel_align='right')
 
     return figure1
 
