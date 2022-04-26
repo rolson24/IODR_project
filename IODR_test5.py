@@ -366,7 +366,7 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, rename_button, name_1
     # add the traces of each tube
     for col in ODdf.columns:
         figure1.add_trace(
-            go.Scatter(
+            go.Scattergl(
                 x=ODdf.index,
                 y=ODdf[col],
                 mode='markers',
@@ -384,7 +384,7 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, rename_button, name_1
     # add the traces of the temperature
     for col in TEMPdf.columns:
         figure1.add_trace(
-            go.Scatter(
+            go.Scattergl(
                 x=TEMPdf.index,
                 y=TEMPdf[col],
                 mode='markers',
