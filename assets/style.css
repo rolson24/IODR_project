@@ -4,7 +4,7 @@
 
 #button-div {
 	flex: 1;
-	width: 30%;
+	width: 40%;
 	height: 100;
 	float: left;
 	margin-top: 50;
@@ -13,7 +13,7 @@
 #tube-name-table {
     flex: 1;
     float: left;
-    margin: 10px;
+    margin-left: 25%;
 	width: 150px;
 	height: 200px;
 }
@@ -38,14 +38,17 @@
 .IODR-button {
     flex: 1;
     margin-right: 30px;
-	margin-top: 50px;
+	margin-top: 50px;,
 }
 #rename-button {
     flex; 1;
     float: right;
-    margin-right: 20%;
-    margin-top: 100px;
+    margin-right: 25%;
+    margin-top: 90px;
 }
 #rename-div {
     height: 300px;
+}
+H4{
+    margin-bottom: 5px;
 }

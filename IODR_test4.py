@@ -157,17 +157,20 @@ app.layout = html.Div([
 	        html.Button(
 	            'IODR #1',
 	            id='IODR1-button',
-	            className='IODR-button'
+	            className='IODR-button',
+	            style={'width':100, 'height': 30}
 	        ),
 	        html.Button(
 	            'IODR #2',
 	            id='IODR2-button',
-	            className='IODR-button'
+	            className='IODR-button',
+	            style={'width':100, 'height': 30}
 	        ),
 	        html.Button(
 	            'IODR #3',
 	            id='IODR3-button',
-	            className='IODR-button'
+	            className='IODR-button',
+	            style={'width':100, 'height': 30}
 	        )
 	    ],
 	    id='button-div',
@@ -256,37 +259,40 @@ app.layout = html.Div([
 			id='tube-name-table'
 		),
 		html.Button(
-		    'Rename Graph',
-		    id='rename-button'
+		    'Rename Tubes',
+		    id='rename-button',
+		    style={'width':100, 'height': 60}
 		)],
 		id='rename-div'
 	),
-	html.H3("Instructions for use:", style={'textAlign': 'center'}),
+	html.H2("Instructions for use:", style={'textAlign': 'center'}),
 	html.Br(),
 	html.Div(children=[
 	    '''
-	    To use this dashboard, first input the names of the bateria strains that 
-	    correspond to each tube. Then click the button labeled with the device you want 
+	    To use this dashboard, first click the button labeled with the device you want 
 	    to view data from. Doing so will pull the most recent 8000 data points 
 	    (1000 per tube) and display them on the scatter plot. This process takes about 
 	    3 seconds to display the graph Note, this data does not update in real-time. 
 	    In order to see the latest data, click the device button again.''',
-	    html.H5("Zoom"),
+	    html.H4("Rename Traces"),
+	    '''To rename the traces on the graph, simply input the names of the bateria 
+	    strains that correspond to each tube.''',
+	    html.H4("Zoom"),
 	    '''To zoom in on a set of points, simply click and drag on the graph and a 
 	    selection box will appear showing the frame that will be zoomed to. To zoom back 
 	    out, double click on the graph and the graph will return to the original view.''',
-	    html.H5("Pan"),
+	    html.H4("Pan"),
 	    '''To pan the graph horizontally and vertically, click and drag on the labels of 
 	    the axes.''',
-	    html.H5("Show/Hide traces"),
+	    html.H4("Show/Hide traces"),
 	    '''To turn individual traces off and on, click the name of the trace you want to 
 	    toggle in the legend of the graph. To turn all the traces off, double 
 	    click on the trace you want on. To turn all of the traces on, double click on any 
 	    of the trace names in the legend.''',
-	    html.H5("Save a picture"),
+	    html.H4("Save a picture"),
 	    '''To save a picture of the graph, hover your mouse over the graph and click the 
 	    camera icon in the upper right-hand corner.''',
-	    html.H5("Operational notes"),
+	    html.H4("Operational notes"),
 	    '''The app times out after 30 minutes of inactivity. You are still able to view 
 	    the current graph, but you must refresh the page to get the data from another 
 	    device.''',
@@ -393,7 +399,7 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, rename_button, name_1
                 '<extra></extra>'), 
             row = 2,
             col = 1)
-    
+
     # align the x-axis
     figure1.update_xaxes(matches='x')
     # de-align the y-axes
