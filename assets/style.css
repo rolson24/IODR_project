@@ -11,11 +11,11 @@
 }
 
 #tube-name-table {
-    padding: 10;
-	flex: 1;
-	width: 30%;
-	height: 200;
-	margin-left: 50%;
+    flex: 1;
+    float: left;
+    margin: 10px;
+	width: 150px;
+	height: 200px;
 }
 
 .tube-title {
@@ -35,8 +35,17 @@
 .tube-input {
     text-align: left;
 }
-Button {
+.IODR-button {
     flex: 1;
-    margin-left: 50%;
-	margin-top: 15px;
+    margin-right: 30px;
+	margin-top: 50px;
+}
+#rename-button {
+    flex; 1;
+    float: right;
+    margin-right: 20%;
+    margin-top: 100px;
+}
+#rename-div {
+    height: 300px;
 }

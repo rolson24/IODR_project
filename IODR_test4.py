@@ -12,6 +12,9 @@ import io
 import plotly.graph_objects as go
 import plotly.express as px
 
+from rq import Queue
+from worker import conn
+
 
 # set ThingSpeak variables
 # 3 sets of data, since there are 3 IODR devices
@@ -32,7 +35,7 @@ chIDs = [405675, 441742, 469909, 890567]
 readAPIkeys = ['18QZSI0X2YZG8491', 'CV0IFVPZ9ZEZCKA8', '27AE8M5DG8F0ZE44', 'M7RIW6KSSW15OGR1']
 
 
-def get_OD_data(device, newNames):
+def get_OD_data(device):
     """Returns a data frame containing the OD data for the specified device.
     
     Arguments:
@@ -64,14 +67,17 @@ def get_OD_data(device, newNames):
     df2 = df2.drop('created_at', axis = 'columns')
     df2.set_index('time', inplace = True)
 
+    return df2
+
+def rename_tubes(dataframe, newNames):
     # rename tubes on update
     i=0;
-    for col in df2.columns:
-        df2.rename(columns = {col : newNames[i]}, inplace = True)
+    for col in dataframe.columns:
+        dataframe.rename(columns = {col : newNames[i]}, inplace = True)
         # print(newNames[i])
         i += 1
     
-    return df2
+    return
 
 
 def get_temp_data(device):
@@ -142,100 +148,118 @@ server = app.server
 server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/c')
 
 app.layout = html.Div([
-    html.H1("IODR Data Browser", style={'textAlign': 'center'}),
+    html.Div(
+        html.H1("IODR Data Browser", style={'textAlign': 'left', 'height': 150, 'width': '60%', 'float': 'left'})
+    ),
     # get data button
     html.Div(
         children=[
 	        html.Button(
 	            'IODR #1',
-	            id='IODR1-button'
+	            id='IODR1-button',
+	            className='IODR-button'
 	        ),
 	        html.Button(
 	            'IODR #2',
-	            id='IODR2-button'
+	            id='IODR2-button',
+	            className='IODR-button'
 	        ),
 	        html.Button(
 	            'IODR #3',
-	            id='IODR3-button'
+	            id='IODR3-button',
+	            className='IODR-button'
 	        )
 	    ],
-	    id='button-div'
+	    id='button-div',
+	    style={'float': 'right', 'height': 150, 'width': '40%'}
 	),
-	# device selector dropdown
-	# table to input tube names
-	html.Table(children=[
-	    html.Thead(children=[
-	        html.Tr(children=[
-	            html.Th(children="Tube", scope='col'),
-	            html.Th(children="Name", scope='col', className='name-title')
-	        ])
-	    ]),
-	    html.Tbody(children=[
-	        html.Tr(children=[
-	            html.Th('1', scope='row', className='tube-num-input'),
-	            html.Td(
-	                dcc.Input(id='tube-1-name'),
-	                className='tube-input'
-	            )
-	        ]),
-	        html.Tr(children=[
-	            html.Th('2', scope='row', className='tube-num-input'),
-	            html.Td(
-	                dcc.Input(id='tube-2-name'),
-	                className='tube-input'
-	            )
-	        ]),
-	        html.Tr(children=[
-	            html.Th('3', scope='row', className='tube-num-input'),
-	            html.Td(
-	                dcc.Input(id='tube-3-name'),
-	                className='tube-input'
-	            )
-	        ]),
-	        html.Tr(children=[
-	            html.Th('4', scope='row', className='tube-num-input'),
-	            html.Td(
-	                dcc.Input(id='tube-4-name'),
-	                className='tube-input'
-	            )
-	        ]),
-	        html.Tr(children=[
-	            html.Th('5', scope='row', className='tube-num-input'),
-	            html.Td(
-	                dcc.Input(id='tube-5-name'),
-	                className='tube-input'
-	            )
-	        ]),
-	        html.Tr(children=[
-	            html.Th('6', scope='row', className='tube-num-input'),
-	            html.Td(
-	                dcc.Input(id='tube-6-name'),
-	                className='tube-input'
-	            )
-	        ]),
-	        html.Tr(children=[
-	            html.Th('7', scope='row', className='tube-num-input'),
-	            html.Td(
-	                dcc.Input(id='tube-7-name'),
-	                className='tube-input'
-	            )
-	        ]),
-	        html.Tr(children=[
-	            html.Th('8', scope='row', className='tube-num-input'),
-	            html.Td(
-	                dcc.Input(id='tube-8-name'),
-	                className='tube-input'
-	            )
-	        ])
-	    ])],
-	    id='tube-name-table'
+	html.Div(
 	),
 	html.Br(),
 	
 	# graph html component
 	html.Div(
-	    dcc.Graph(
-	        id='graph1')
+	    dcc.Loading(
+	        dcc.Graph(
+	            id='graph1')
+	    ),
+	    style={'marginTop': 150}
+	),
+	# device selector dropdown
+	# table to input tube names
+	html.Div(children=[
+		html.Table(children=[
+			html.Thead(children=[
+				html.Tr(children=[
+					html.Th(children="Tube", scope='col'),
+					html.Th(children="Name", scope='col', className='name-title')
+				])
+			]),
+			html.Tbody(children=[
+				html.Tr(children=[
+					html.Th('1', scope='row', className='tube-num-input'),
+					html.Td(
+						dcc.Input(id='tube-1-name'),
+						className='tube-input'
+					)
+				]),
+				html.Tr(children=[
+					html.Th('2', scope='row', className='tube-num-input'),
+					html.Td(
+						dcc.Input(id='tube-2-name'),
+						className='tube-input'
+					)
+				]),
+				html.Tr(children=[
+					html.Th('3', scope='row', className='tube-num-input'),
+					html.Td(
+						dcc.Input(id='tube-3-name'),
+						className='tube-input'
+					)
+				]),
+				html.Tr(children=[
+					html.Th('4', scope='row', className='tube-num-input'),
+					html.Td(
+						dcc.Input(id='tube-4-name'),
+						className='tube-input'
+					)
+				]),
+				html.Tr(children=[
+					html.Th('5', scope='row', className='tube-num-input'),
+					html.Td(
+						dcc.Input(id='tube-5-name'),
+						className='tube-input'
+					)
+				]),
+				html.Tr(children=[
+					html.Th('6', scope='row', className='tube-num-input'),
+					html.Td(
+						dcc.Input(id='tube-6-name'),
+						className='tube-input'
+					)
+				]),
+				html.Tr(children=[
+					html.Th('7', scope='row', className='tube-num-input'),
+					html.Td(
+						dcc.Input(id='tube-7-name'),
+						className='tube-input'
+					)
+				]),
+				html.Tr(children=[
+					html.Th('8', scope='row', className='tube-num-input'),
+					html.Td(
+						dcc.Input(id='tube-8-name'),
+						className='tube-input'
+					)
+				])
+			])],
+			id='tube-name-table'
+		),
+		html.Button(
+		    'Rename Graph',
+		    id='rename-button'
+		)],
+		id='rename-div'
 	),
 	html.H3("Instructions for use:", style={'textAlign': 'center'}),
 	html.Br(),
@@ -284,6 +308,7 @@ app.layout = html.Div([
     Input('IODR1-button', 'n_clicks'),
     Input('IODR2-button', 'n_clicks'),
     Input('IODR3-button', 'n_clicks'),
+    Input('rename-button', 'n_clicks'),
     State('tube-1-name', 'value'),
     State('tube-2-name', 'value'),
     State('tube-3-name', 'value'),
@@ -292,7 +317,7 @@ app.layout = html.Div([
     State('tube-6-name', 'value'),
     State('tube-7-name', 'value'),
     State('tube-8-name', 'value'))
-def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8):
+def update_graph(IODR1_button, IODR2_button, IODR3_button, rename_button, name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8):
     # put the new names into the list 
     newNames[0] = name_1 if (name_1 != None and name_1 != "") else originalNames[0]
     newNames[1] = name_2 if (name_2 != None and name_2 != "") else originalNames[1]
@@ -326,8 +351,11 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
         figure1.update_layout(title="IODR #1")
     
     # retrieve the data from Thingspeak
-    ODdf = get_OD_data(device, newNames)
+    ODdf = get_OD_data(device)
     TEMPdf = get_temp_data(device)
+    
+    if 'rename-button' in changed_id:
+        rename_tubes(ODdf, newNames)
     
     # add the traces of each tube
     for col in ODdf.columns:
@@ -339,8 +367,8 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
                 marker_size=5,
                 name=col,
                 meta=col,
-                legendgroup="OD traces",
-                legendgrouptitle_text="OD traces",
+                # legendgroup="OD traces",
+                # legendgrouptitle_text="OD traces",
                 hovertemplate='Time: %{x}' +
                 '<br>OD: %{y}<br>' +
                 'Trace: %{meta}<br>'+
@@ -373,7 +401,7 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
     # set the range for the temperature y-axis
     figure1.update_yaxes(range=[30, 60], row=2, col=1)
     figure1.update_layout(
-        height=1000,
+        height=800,
         font=dict(
             family='Open Sans',
             size=14
@@ -381,7 +409,7 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, name_1, name_2, name_
         legend_itemdoubleclick='toggleothers',
         legend_groupclick='toggleitem',
         legend_itemsizing='constant',
-        legend_tracegroupgap=480,
+        # legend_tracegroupgap=320,
         hoverlabel_align='right')
 
     return figure1
