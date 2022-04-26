@@ -52,7 +52,7 @@ def get_OD_data(device):
     readAPIkey = readAPIkeys[device]
 
     # get data from Thingspeak
-    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=8000'.format(channel_id = chID)
+    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=1500'.format(channel_id = chID)
     #myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?start=2021-09-20'.format(channel_id = chID)
     # print(myUrl)
     r = requests.get(myUrl)
