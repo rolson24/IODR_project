@@ -15,6 +15,10 @@ import plotly.express as px
 from rq import Queue
 from worker import conn
 
+import logging
+from scipy.signal import find_peaks
+from scipy.optimize import curve_fit
+from scipy import stats
 
 # set ThingSpeak variables
 # 3 sets of data, since there are 3 IODR devices
@@ -31,11 +35,13 @@ newNames = ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7'
 
 dataFrames = []
 
+numCallbacks = 0
+
 chIDs = [405675, 441742, 469909, 890567]
 readAPIkeys = ['18QZSI0X2YZG8491', 'CV0IFVPZ9ZEZCKA8', '27AE8M5DG8F0ZE44', 'M7RIW6KSSW15OGR1']
 
 
-def get_OD_data(device):
+def get_OD_dataframe(device):
     """Returns a data frame containing the OD data for the specified device.
     
     Arguments:
@@ -59,15 +65,17 @@ def get_OD_data(device):
 
     # put the thingspeak data in a dataframe
     df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
+    
+    return df
 
-    df2 = df.drop('entry_id', axis = 'columns')
-
+def format_OD_data(dataframe):
+    df2 = dataframe.drop('entry_id', axis = 'columns')
     # convert time string to datetime, and switch from UTC to Eastern time
     df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
-    df2 = df2.drop('created_at', axis = 'columns')
-    df2.set_index('time', inplace = True)
-
-    return df2
+    df3 = df2.drop('created_at', axis = 'columns')
+    df4 = df3.set_index('time')
+    print(df4.head())
+    return df4
 
 def rename_tubes(dataframe, newNames):
     # rename tubes on update
@@ -139,6 +147,43 @@ config = {
     }
 }
 
+def format_ln_data(dataframe, tube_num, blank_value=0.1):
+    tube_name = dataframe.columns[tube_num + 1]
+    print(tube_name)
+    print(dataframe.head())
+    df2 = dataframe.loc[:, ['created_at', tube_name]].dropna()
+    print(df2.head())
+    df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
+    df2['time'] = (df2['time'] - df2['time'][0])/pd.Timedelta(1, 'h')
+    print(df2.head())
+    # df2['time'] = pd.to_timedelta(df2['created_at'])/pd.Timedelta(1, 'h')
+    df3 = df2.drop('created_at', axis = 'columns')
+    df3.rename({tube_name:'OD'}, axis=1, inplace=True)
+    print(df3.head())
+    #df3['OD'] = df3['OD'] - blank_value
+    df3['lnOD'] = np.log(df3['OD'])
+    print(df3['lnOD'])
+    df3['lnOD'].replace('', np.nan, inplace=True)
+    df3.dropna(subset=['lnOD'], inplace=True)
+    return df3
+    
+def linear_curve(t, a, b):
+    """
+    fit data to linear model
+    """
+    return a*t + b
+
+def predict_curve(dataframe, curve, window_start_time, window_end_time, prediction_interval):
+    df2 = dataframe.loc[(dataframe['time'] > window_start_time) & (dataframe['time'] < window_end_time)]
+    print(df2['lnOD'])
+    if not df2['lnOD'].empty:
+    	popt, pcov = curve_fit(curve, df2['time'], df2['lnOD'])
+    	print(popt)
+    else:
+        print('no data')
+        popt = []
+    
+    return popt
 
 app = Dash(__name__)
 
@@ -146,6 +191,8 @@ server = app.server
 
 # for heroku server
 server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/c')
+
+
 
 app.layout = html.Div([
     html.Div(
@@ -176,8 +223,7 @@ app.layout = html.Div([
 	    id='button-div',
 	    style={'float': 'right', 'height': 150, 'width': '40%'}
 	),
-	html.Div(
-	),
+	html.Div(),
 	html.Br(),
 	
 	# graph html component
@@ -265,6 +311,43 @@ app.layout = html.Div([
 		)],
 		id='rename-div'
 	),
+	html.Br(),
+	
+	html.Div(children=[
+	    html.Div(
+			dcc.Loading(
+				dcc.Graph(
+					id='graph3'
+				)
+			),
+	        style={'width': '80%', 'flex': 1, 'float': 'left'}
+	    ),
+	    html.Div(
+			dcc.Slider(
+				min=0,
+				max=1,
+				step=0.2,
+				value=0.5,
+				vertical=True,
+				verticalHeight=300,
+				disabled=False
+			),
+			style={'float': 'right', 'flex': 1, 'width': '15%', 'marginTop': 50}
+		)
+	]),
+	# graph html component
+	html.Div(
+	    dcc.Loading(
+	        dcc.Graph(
+	            id='graph2'
+	        )
+	    ),
+	    style={'flex': 1, 'float': 'left'}
+	),
+	html.Div(children=[
+	    dcc.Dropdown(newNames, id = 'tube-dropdown')],
+	    style={'flex':1, 'marginTop': 900}
+	),
 	html.H2("Instructions for use:", style={'textAlign': 'center'}),
 	html.Br(),
 	html.Div(children=[
@@ -306,11 +389,14 @@ app.layout = html.Div([
 	        )]
 	    ),
 	    ],
-	    style={'marginLeft': 30, 'marginRight': 30, 'marginBottom': 30})
+	    style={'marginLeft': 30, 'marginRight': 30, 'marginBottom': 30}),
+	    dcc.Store(id='ODdf_original_store')
 ])
 
 @app.callback(
     Output('graph1', 'figure'),
+    Output('tube-dropdown', 'options'),
+    Output('ODdf_original_store', 'data'),
     Input('IODR1-button', 'n_clicks'),
     Input('IODR2-button', 'n_clicks'),
     Input('IODR3-button', 'n_clicks'),
@@ -324,6 +410,7 @@ app.layout = html.Div([
     State('tube-7-name', 'value'),
     State('tube-8-name', 'value'))
 def update_graph(IODR1_button, IODR2_button, IODR3_button, rename_button, name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8):
+    global numCallbacks
     # put the new names into the list 
     newNames[0] = name_1 if (name_1 != None and name_1 != "") else originalNames[0]
     newNames[1] = name_2 if (name_2 != None and name_2 != "") else originalNames[1]
@@ -357,11 +444,15 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, rename_button, name_1
         figure1.update_layout(title="IODR #1")
     
     # retrieve the data from Thingspeak
-    ODdf = get_OD_data(device)
+
+    ODdf_original = get_OD_dataframe(device)
+    ODdf = format_OD_data(ODdf_original)
     TEMPdf = get_temp_data(device)
     
-    if 'rename-button' in changed_id:
+    if 'rename-button' in changed_id or numCallbacks == 0:
         rename_tubes(ODdf, newNames)
+    
+    numCallbacks += 1
     
     # add the traces of each tube
     for col in ODdf.columns:
@@ -417,9 +508,34 @@ def update_graph(IODR1_button, IODR2_button, IODR3_button, rename_button, name_1
         legend_itemsizing='constant',
         # legend_tracegroupgap=320,
         hoverlabel_align='right')
+    
+    return figure1, newNames, ODdf_original.to_json(date_format='iso', orient='split')
 
-    return figure1
-
+@app.callback(
+    Output('graph2', 'figure'),
+    Output('graph3', 'figure'),
+    Input('tube-dropdown', 'value'),
+    Input('ODdf_original_store', 'data')
+)
+def update_predict_graphs(fit_tube, ODdf_original_json):
+    ODdf_original = pd.read_json(ODdf_original_json, orient='split')
+    if fit_tube != None:
+        lnODdf = format_ln_data(ODdf_original, newNames.index(fit_tube))
+    else:
+        lnODdf = format_ln_data(ODdf_original, 1)
+    popt = predict_curve(lnODdf, linear_curve, 26, 34, 4)
+    figure2 = px.scatter(lnODdf, x = 'time', y = 'lnOD')
+    figure3 = px.scatter(lnODdf, x = 'time', y = 'OD')
+    
+    if popt.any():
+        t_predict = np.linspace(26, 34, 50)
+        y_predict = linear_curve(t_predict, popt[0], popt[1])
+        figure2.add_trace(go.Scatter(x=t_predict, y=y_predict, mode='markers'))
+        y_predict_lin = np.exp(y_predict)
+        print(y_predict_lin)
+        figure3.add_trace(go.Scatter(x=t_predict, y=y_predict_lin, mode='markers'))
+    
+    return figure2, figure3
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='0.0.0.0', port=8050)
