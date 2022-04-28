@@ -6,3 +6,4 @@ requests
 dash
 rq
 whitenoise==5.2.0
+plotly
