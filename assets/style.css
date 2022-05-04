@@ -13,8 +13,8 @@
 #tube-name-table {
     flex: 1;
     float: left;
-    margin-left: 25%;
-	width: 150px;
+    margin-left: 15%;
+	width: 200px;
 	height: 200px;
 }
 
@@ -27,7 +27,7 @@
     margin-right: 2%;
 }
 .name-title {
-    text-align: left;
+    text-align: right;
 }
 .tube-num-label {
     text-align: center;
