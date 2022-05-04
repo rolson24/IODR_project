@@ -31,6 +31,7 @@ tsBaseUrl = r'https://api.thingspeak.com/channels'
 # 4: temperature readings for all devices
 devNames = ['IODR #1', 'IODR #2', 'IODR #3']
 oldNames = ['tube 1', 'tube 2', 'tube 3', 'tube 4', 'tube 5', 'tube 6', 'tube 7', 'tube 8']
+# needs to be put in dcc.Store
 newNames = ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8']
 
 # dataFrames = []
@@ -508,7 +509,8 @@ app.layout = html.Div([
         style={'marginLeft': 30, 'marginRight': 30, 'marginBottom': 30}),
         # storage components to share dataframes between callbacks
         dcc.Store(id='ODdf_original_store'),
-        dcc.Store(id='IODR_store')
+        dcc.Store(id='IODR_store'),
+        dcc.Store(data=newNames, id='newNames_store')
 ])
 
 # callback for choosing which IODR to load
@@ -537,6 +539,7 @@ def update_which_IODR(IODR1_button, IODR2_button, IODR3_button):
     Output('tube-dropdown', 'options'),
     Output('tube-dropdown', 'value'),
     Output('ODdf_original_store', 'data'),
+    Output('newNames_store', 'data'),
     Input('IODR_store', 'data'),
     Input('rename-button', 'n_clicks'),
     State('tube-dropdown', 'value'),
@@ -547,8 +550,9 @@ def update_which_IODR(IODR1_button, IODR2_button, IODR3_button):
     State('tube-5-name', 'value'),
     State('tube-6-name', 'value'),
     State('tube-7-name', 'value'),
-    State('tube-8-name', 'value'))
-def update_graph(device, rename_button, ln_tube, name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8):
+    State('tube-8-name', 'value'),
+    State('newNames_store', 'data'))
+def update_graph(device, rename_button, ln_tube, name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8, newNames):
     # get the index of the current tube selected in the dropdown to fix a bug
     tube_index = newNames.index(ln_tube) if ln_tube != None else 0
     # put the new names into the list 
@@ -644,7 +648,7 @@ def update_graph(device, rename_button, ln_tube, name_1, name_2, name_3, name_4,
         # legend_tracegroupgap=320,
         hoverlabel_align='right')
     # return the ODdf_original dataframe as a json to the store component
-    return figure1, newNames, newNames[tube_index], ODdf_original.to_json(date_format='iso', orient='split')
+    return figure1, newNames, newNames[tube_index], ODdf_original.to_json(date_format='iso', orient='split'), newNames
 
 # callback for the prediction graphs
 @app.callback(
@@ -653,9 +657,10 @@ def update_graph(device, rename_button, ln_tube, name_1, name_2, name_3, name_4,
     Input('ODdf_original_store', 'data'),
     Input('OD_target_slider', 'value'),
     Input('data-selection-slider', 'value'),
-    Input('blank-val-slider', 'value')
+    Input('blank-val-slider', 'value'),
+    Input('newNames_store', 'data')
 )
-def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_selection_slider, blank_value_slider):
+def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_selection_slider, blank_value_slider, newNames):
     # read the dataframe in from the storage component
     ODdf_original = pd.read_json(ODdf_original_json, orient='split')
     ODdf_original.index = ODdf_original.index - pd.Timedelta(4, 'h')
