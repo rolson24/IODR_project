@@ -326,56 +326,56 @@ app.layout = html.Div([
                 html.Tr(children=[
                     html.Th('1', scope='row', className='tube-num-input'),
                     html.Td(
-                        dcc.Input(id='tube-1-name', value=oldNames[0]),
+                        dcc.Input(id='tube-1-name', value=newNames[0]),
                         className='tube-input'
                     )
                 ]),
                 html.Tr(children=[
                     html.Th('2', scope='row', className='tube-num-input'),
                     html.Td(
-                        dcc.Input(id='tube-2-name', value=oldNames[1]),
+                        dcc.Input(id='tube-2-name', value=newNames[1]),
                         className='tube-input'
                     )
                 ]),
                 html.Tr(children=[
                     html.Th('3', scope='row', className='tube-num-input'),
                     html.Td(
-                        dcc.Input(id='tube-3-name', value=oldNames[2]),
+                        dcc.Input(id='tube-3-name', value=newNames[2]),
                         className='tube-input'
                     )
                 ]),
                 html.Tr(children=[
                     html.Th('4', scope='row', className='tube-num-input'),
                     html.Td(
-                        dcc.Input(id='tube-4-name', value=oldNames[3]),
+                        dcc.Input(id='tube-4-name', value=newNames[3]),
                         className='tube-input'
                     )
                 ]),
                 html.Tr(children=[
                     html.Th('5', scope='row', className='tube-num-input'),
                     html.Td(
-                        dcc.Input(id='tube-5-name', value=oldNames[4]),
+                        dcc.Input(id='tube-5-name', value=newNames[4]),
                         className='tube-input'
                     )
                 ]),
                 html.Tr(children=[
                     html.Th('6', scope='row', className='tube-num-input'),
                     html.Td(
-                        dcc.Input(id='tube-6-name', value=oldNames[5]),
+                        dcc.Input(id='tube-6-name', value=newNames[5]),
                         className='tube-input'
                     )
                 ]),
                 html.Tr(children=[
                     html.Th('7', scope='row', className='tube-num-input'),
                     html.Td(
-                        dcc.Input(id='tube-7-name', value=oldNames[6]),
+                        dcc.Input(id='tube-7-name', value=newNames[6]),
                         className='tube-input'
                     )
                 ]),
                 html.Tr(children=[
                     html.Th('8', scope='row', className='tube-num-input'),
                     html.Td(
-                        dcc.Input(id='tube-8-name', value=oldNames[7]),
+                        dcc.Input(id='tube-8-name', value=newNames[7]),
                         className='tube-input'
                     )
                 ])
