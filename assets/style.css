@@ -14,7 +14,7 @@
     flex: 1;
     float: left;
     margin-left: 15%;
-	width: 200px;
+	width: 500px;
 	height: 200px;
 }
 
@@ -43,7 +43,7 @@
 #rename-button {
     flex; 1;
     float: right;
-    margin-right: 25%;
+    margin-right: 15%;
     margin-top: 90px;
 }
 #rename-div {

@@ -2,6 +2,12 @@ from dash import Dash, dcc, html, Input, Output, State, callback_context
 from plotly.subplots import make_subplots
 from whitenoise import WhiteNoise
 
+from functions import get_OD_dataframe as get_OD_dataframe
+from functions import get_temp_data as get_temp_data
+from functions import format_OD_data as format_OD_data
+from functions import format_ln_data as format_ln_data
+from functions import rename_tubes as rename_tubes
+from functions import predict_curve as predict_curve
 
 import numpy as np
 import pandas as pd
@@ -42,145 +48,13 @@ chIDs = [405675, 441742, 469909, 890567]
 readAPIkeys = ['18QZSI0X2YZG8491', 'CV0IFVPZ9ZEZCKA8', '27AE8M5DG8F0ZE44', 'M7RIW6KSSW15OGR1']
 
 
-def get_OD_dataframe(device):
-    """Returns a data frame containing the OD data for the specified device.
-    
-    Arguments:
-    device -- int device number (0-2)
-    newNames -- list of strings for the names of each tube (expected length 8)
-    
-    relies on global variables chIDs and readAPIkeys
-    """
-    # select the channel ID and read API key depending on which device is being used
-    # chID = chIDs[devNum-1]
-    chID = chIDs[device]
+marks = dict()
 
-    #readAPIkey = readAPIkeys[devNum-1]
-    readAPIkey = readAPIkeys[device]
+for i in range(0,25):
+    marks[-i] = {'label': f'-{i}'}
 
-    # get data from Thingspeak
-    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=8000'.format(channel_id = chID)
-    #myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?start=2021-09-20'.format(channel_id = chID)
-    # print(myUrl)
-    r = requests.get(myUrl)
+print(marks)
 
-    # put the thingspeak data in a dataframe
-    df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
-    
-    print("the first df", df)
-    
-    df2 = df.drop('entry_id', axis = 'columns')
-    print(df2)
-    # convert time string to datetime, and switch from UTC to Eastern time
-    print(df2)
-    df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
-    print(df2)
-    # remove the created_at column
-    df3 = df2.drop('created_at', axis = 'columns')
-    print(df3)
-    # set index to time
-    df4 = df3.set_index('time')
-
-    first_time_time = df4.index[0]
-    last_time_time = df4.index[-1]
-    print("df4", df4)
-    print("first time ", first_time_time)
-    print("last time ", last_time_time)
-
-    df5 = df4.loc[(df4.index > (last_time_time - pd.Timedelta(2, 'h'))) & (df4.index < last_time_time)]
-
-    df6 = df4.loc[(df4.index > first_time_time) & (df4.index < last_time_time - pd.Timedelta(2, 'h'))]
-    df7 = df6.iloc[::10]
-
-    df8 = pd.concat([df7, df5])
-    print("df8 ", df8)
-
-
-    return df8
-
-# Not being used
-def format_OD_data(dataframe):
-    """Returns a dataframe with the time strings switched to datetime objects
-    
-    Arguments:
-    dataframe -- pandas dataframe with time column as strings formatted for time
-    """
-    df2 = dataframe.drop('entry_id', axis = 'columns')
-    # convert time string to datetime, and switch from UTC to Eastern time
-    df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
-    df3 = df2.drop('created_at', axis = 'columns')
-    df4 = df3.set_index('time')
-    # print(df4.head())
-    return df4
-
-def rename_tubes(dataframe, newNames):
-    """Modifies the input dataframe inplace to rename the columns to the newNames list
-    List must be the same length and order as the columns you want to rename
-    
-    Arguments:
-    dataframe -- pandas dataframe (in this context, only columns are the traces)
-    """
-    # rename tubes on update
-    i = 0
-    # print("rename df", dataframe)
-    for col in dataframe.columns:
-        dataframe.rename(columns = {col : newNames[i]}, inplace=True)
-        # print(newNames[i])
-        i += 1
-    
-    return
-
-
-def get_temp_data(device):
-    """Returns a data frame containing the temperature data for the specified device
-    
-    Arguments:
-    device -- int device number (0-2)
-    
-    relies on global variables chIDs and readAPIkeys
-    """
-    # select the channel ID and read API key for temperature data
-    chID = chIDs[3]
-
-    #readAPIkey = readAPIkeys[devNum-1]
-    readAPIkey = readAPIkeys[3]
-
-    # get data from Thingspeak
-    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=1500'.format(channel_id = chID)
-    #myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?start=2021-09-20'.format(channel_id = chID)
-    #print(myUrl)
-    r = requests.get(myUrl)
-
-    # put the thingspeak data in a dataframe
-    df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
-
-    df2 = df.drop('entry_id', axis = 'columns')
-
-    # convert time string to datetime, and switch from UTC to Eastern time
-    df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
-    df2 = df2.drop('created_at', axis = 'columns')
-    df2.set_index('time', inplace = True)
-
-    # format data for temperature, inlcude only temperature that matches the device selected
-    if(device == 0):
-        df3 = df2.drop(['field3', 'field4', 'field5', 'field6'], axis = 'columns')
-    elif (device == 1):
-        df3 = df2.drop(['field1', 'field2', 'field5', 'field6'], axis = 'columns')
-    else:
-        df3 = df2.drop(['field1', 'field2', 'field3', 'field4'], axis = 'columns')
-    
-    # rename columns for graphing
-    tempNames = {
-           'field1' : 'Temp Int',
-           'field2' : 'Temp Ext',
-           'field3' : 'Temp Int',
-           'field4' : 'Temp Ext',
-           'field5' : 'Temp Int',
-           'field6' : 'Temp Ext'
-           }
-    df3.rename(columns = tempNames, inplace=True)
-    
-    return df3
 
 # can edit title and legend names
 config = {
@@ -190,73 +64,12 @@ config = {
     }
 }
 
-def format_ln_data(dataframe, tube_num, blank_value=0.01):
-    """Returns a tuple of a ln transformed dataframe and the last time value
-    in the dataframe as a datetime object
-    
-    Arguments:
-    dataframe -- pandas dataframe with time 
-    """
-    print("ln dataframe", dataframe.head())
-    # get the name of the tube
-    tube_name = dataframe.columns[tube_num]
-    
-    # create new dataframe with tube_names and time index
-    df2 = dataframe.loc[:, [tube_name]].dropna()
-    #df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
-    #df3 = df2.drop('created_at', axis = 'columns')
-    #print(df2.head())
-    #print(type(df2.index[0]))
-    
-    #print(df2.head())
-    # df2['time'] = pd.to_timedelta(df2['created_at'])/pd.Timedelta(1, 'h')
-    
-    # rename tube column to OD
-    df2.rename({tube_name:'OD'}, axis=1, inplace=True)
-    df2['OD'] = df2['OD'] - blank_value
-    print("OD after blank val sub", df2['OD'])
-    # calculate the natural log
-    df2['lnOD'] = np.log(df2['OD'])
-    #print(df2['lnOD'])
-    # get rid of empty values and 0 OD values so ln is not inf
-    df2['lnOD'].replace('', np.nan, inplace=True)
-    df2['OD'].replace(0, np.nan, inplace=True)
-    df2.dropna(inplace=True)
-    
-    return df2
-    
 def linear_curve(t, a, b):
     """
     fit data to linear model
     """
     return a*t + b
 
-def predict_curve(dataframe, curve, slider_vals):
-    # copy the dataframe so not editing in place
-    df = dataframe.copy()
-    # change the index (time) to an hour number
-    df.index = (df.index - df.index[0])/pd.Timedelta(1, 'h') # this is done here so data gets displayed in datetime
-    # get the last time point in a float while here for displaying prediction
-    last_time_point = df.index[-1]
-    print(f"last time point val: {last_time_point}")
-    print(f"slider val: {slider_vals}")
-    # filter data so that only the data within the range is used
-    df2 = df.loc[(df.index > (last_time_point + slider_vals[0])) & (df.index < last_time_point + slider_vals[1])]
-
-    print("begin selection: ", (last_time_point + slider_vals[0]))
-    print("end selection: ", last_time_point + slider_vals[1])
-
-    print("cleaned lnOD ")
-    print(df2)
-    if not df2['lnOD'].empty:
-        # do the curve fit
-        popt, pcov = curve_fit(curve, df2.index, df2['lnOD'])
-        print("popt", popt)
-    else:
-        print('no data')
-        popt = np.array([]) # need to figure out what this should actually be
-    
-    return popt, last_time_point
 
 app = Dash(__name__)
 
@@ -392,6 +205,12 @@ app.layout = html.Div([
     ),
     html.Br(),
 
+    # tube selector dropdown
+    html.Div(children=[
+        html.H3("Tube Selector", style={'textAlign': 'center'}),
+        dcc.Dropdown(newNames, id = 'tube-dropdown')],
+        style={'flex': 1, 'width': '30%', 'marginLeft': '35%'}
+    ),
     # graph 3 is linear OD graph
     html.Div(children=[
         html.Div(
@@ -426,12 +245,7 @@ app.layout = html.Div([
     #     ),
     #     style={'flex': 1, 'float': 'left'}
     # ),
-    # tube selector dropdown
-    html.Div(children=[
-        html.H3("Tube Selector", style={'textAlign': 'center'}),
-        dcc.Dropdown(newNames, id = 'tube-dropdown')],
-        style={'flex': 1, 'marginTop': 900, 'width': '30%', 'marginLeft': '35%'}
-    ),
+
     # prediction range slider
     html.Br(),
     html.Div(children=[
@@ -439,21 +253,21 @@ app.layout = html.Div([
         dcc.RangeSlider(
             min=-24,
             max=0,
-            step=0.5,
+            step=0.25,
+            marks=marks,
             value=[-5, 0],
             id = 'data-selection-slider')],
-        style={'flex': 1, 'marginTop': 15}
+        style={'flex': 1, 'marginTop': 900}
     ),
     html.Div(children=[
         html.H3("OD offset value", style={'textAlign': 'center'}),
-        dcc.Slider(
-            min=0,
-            max=.1,
-            step=0.01,
+        dcc.Input(
             value=0.01,
-            id='blank-val-slider')],
+            id='blank-val-input'
+        )],
         style={'flex': 1, 'marginTop': 15}
     ),
+    html.H6("", id='zoom-data'),
     html.Br(),
     html.Br(),
     html.H2("Instructions for use:", style={'textAlign': 'center'}),
@@ -510,7 +324,8 @@ app.layout = html.Div([
         # storage components to share dataframes between callbacks
         dcc.Store(id='ODdf_original_store'),
         dcc.Store(id='IODR_store'),
-        dcc.Store(data=newNames, id='newNames_store')
+        dcc.Store(data=newNames, id='newNames_store'),
+        dcc.Store(id='zoom_vals_store')
 ])
 
 # callback for choosing which IODR to load
@@ -556,14 +371,14 @@ def update_graph(device, rename_button, ln_tube, name_1, name_2, name_3, name_4,
     # get the index of the current tube selected in the dropdown to fix a bug
     tube_index = newNames.index(ln_tube) if ln_tube != None else 0
     # put the new names into the list 
-    newNames[0] = name_1 if (name_1 != None and name_1 != "") else newNames[0]
-    newNames[1] = name_2 if (name_2 != None and name_2 != "") else newNames[1]
-    newNames[2] = name_3 if (name_3 != None and name_3 != "") else newNames[2]
-    newNames[3] = name_4 if (name_4 != None and name_4 != "") else newNames[3]
-    newNames[4] = name_5 if (name_5 != None and name_5 != "") else newNames[4]
-    newNames[5] = name_6 if (name_6 != None and name_6 != "") else newNames[5]
-    newNames[6] = name_7 if (name_7 != None and name_7 != "") else newNames[6]
-    newNames[7] = name_8 if (name_8 != None and name_8 != "") else newNames[7]
+    newNames[0] = "1_" + name_1 if (name_1 != None and name_1 != "") else newNames[0]
+    newNames[1] = "2_" + name_2 if (name_2 != None and name_2 != "") else newNames[1]
+    newNames[2] = "3_" + name_3 if (name_3 != None and name_3 != "") else newNames[2]
+    newNames[3] = "4_" + name_4 if (name_4 != None and name_4 != "") else newNames[3]
+    newNames[4] = "5_" + name_5 if (name_5 != None and name_5 != "") else newNames[4]
+    newNames[5] = "6_" + name_6 if (name_6 != None and name_6 != "") else newNames[5]
+    newNames[6] = "7_" + name_7 if (name_7 != None and name_7 != "") else newNames[6]
+    newNames[7] = "8_" + name_8 if (name_8 != None and name_8 != "") else newNames[7]
     # print(newNames)
     # make the subplots object
     figure1 = make_subplots(
@@ -583,11 +398,11 @@ def update_graph(device, rename_button, ln_tube, name_1, name_2, name_3, name_4,
         figure1.update_layout(title="IODR #3")
     
     # retrieve the data from Thingspeak
-    ODdf_original = get_OD_dataframe(device)
+    ODdf_original = get_OD_dataframe(device, chIDs, readAPIkeys)
     #print("ODdf_original", type(ODdf_original.index[0]), ODdf_original)
     #ODdf = format_OD_data(ODdf_original)
     #print("ODdf", type(ODdf.index[0]), ODdf)
-    TEMPdf = get_temp_data(device)
+    TEMPdf = get_temp_data(device, chIDs, readAPIkeys)
     
     # rename the tubes on button press
     if 'rename-button' in changed_id: #or numCallbacks == 0:
@@ -657,20 +472,25 @@ def update_graph(device, rename_button, ln_tube, name_1, name_2, name_3, name_4,
     Input('ODdf_original_store', 'data'),
     Input('OD_target_slider', 'value'),
     Input('data-selection-slider', 'value'),
-    Input('blank-val-slider', 'value'),
-    Input('newNames_store', 'data')
+    Input('blank-val-input', 'value'),
+    Input('newNames_store', 'data'),
+    State('zoom_vals_store', 'data')
 )
-def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_selection_slider, blank_value_slider, newNames):
+def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_selection_slider, blank_value_input, newNames, zoom_vals):
     # read the dataframe in from the storage component
     ODdf_original = pd.read_json(ODdf_original_json, orient='split')
     ODdf_original.index = ODdf_original.index - pd.Timedelta(4, 'h')
+    try:
+        blank_value_input = float(blank_value_input)
+    except:
+        blank_value_input = 0
     if fit_tube != None:
         #print("index", newNames.index(fit_tube))
         # format the data into a dataframe of just the selected tube's OD and lnOD data
-        lnODdf = format_ln_data(ODdf_original, newNames.index(fit_tube), blank_value=blank_value_slider)
+        lnODdf = format_ln_data(ODdf_original, newNames.index(fit_tube), blank_value=float(blank_value_input))
     else:
         #print('tube 0')
-        lnODdf = format_ln_data(ODdf_original, 0, blank_value=blank_value_slider)
+        lnODdf = format_ln_data(ODdf_original, 0, blank_value=float(blank_value_input))
     #print("lnODdf", lnODdf)
     
     # use predict_curve function to predict the curve and get the last time point as a float
@@ -756,7 +576,7 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
     )
     predict_figure.update_layout(height=800)
     
-    if popt.any():
+    if len(popt) != 0:
         last_time_time = lnODdf.index[-1]
 
         print("add predictions")
@@ -895,10 +715,35 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
         )
     predict_figure.update_layout(legend_tracegroupgap=320)
     predict_figure.add_hline(y=OD_target_slider, line_width=2, line_dash='dash', row=1, col=1)
-    predict_figure.update_xaxes(matches='x')
+    if len(zoom_vals) != 0:
+        if zoom_vals[0] is True:
+            predict_figure.update_xaxes(matches='x', autorange=True)
+        else:
+            predict_figure.update_xaxes(matches='x', range=zoom_vals)
+    else:
+        predict_figure.update_xaxes(matches='x')
 
     return predict_figure
 
+@app.callback(
+    Output('zoom_vals_store', 'data'),
+    Input('linearODgraph', 'relayoutData')
+)
+def zoom_event(relayout_data):
+    data = []
+    if relayout_data is not None:
+        if 'xaxis.range[0]' in relayout_data:
+            data.append(relayout_data['xaxis.range[0]'])
+            data.append(relayout_data['xaxis.range[1]'])
+            #data2 = relayout_data['xaxis.autorange']
+            print(data)
+            #print(data2)
+        else:
+            data = []
+        if 'xaxis.autorange' in relayout_data:
+            data.append(relayout_data['xaxis.autorange'])
+            print(data)
+    return data
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='0.0.0.0', port=8050)
