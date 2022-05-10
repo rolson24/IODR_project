@@ -494,7 +494,7 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
     #print("lnODdf", lnODdf)
     
     # use predict_curve function to predict the curve and get the last time point as a float
-    popt, last_time_point = predict_curve(lnODdf, linear_curve, data_selection_slider)
+    popt, last_time_point, r = predict_curve(lnODdf, linear_curve, data_selection_slider)
     # lnFigure = px.scatter(lnODdf, x = 'time', y = 'lnOD')
     #linearFigure = px.scatter(lnODdf, x = 'time', y = 'OD')
     
@@ -610,7 +610,7 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
                 name='lnOD prediction',
                 meta='lnOD prediction',
                 marker=dict(
-                    color='green'
+                    color='green' if r**2 > 0.9 else 'red'
                 ),
                 legendgroup="ln traces",
                 hovertemplate='Time: %{x}' +
@@ -653,7 +653,7 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
                 name='OD prediction',
                 meta='OD prediction',
                 marker=dict(
-                    color='green'
+                    color='green' if r**2 > 0.9 else 'red'
                 ),
                 legendgroup="linear traces",
                 hovertemplate='Time: %{x}' +

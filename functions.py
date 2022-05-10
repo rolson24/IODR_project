@@ -228,4 +228,5 @@ def predict_curve(dataframe, curve, slider_vals):
         print('no data')
         # popt = np.array([])  # need to figure out what this should actually be
         curve_info = []
-    return curve_info, last_time_point
+        r = 0
+    return curve_info, last_time_point, r

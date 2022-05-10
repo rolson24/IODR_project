@@ -75,7 +75,7 @@ def estimate_times(lnDataframes, curve, target_vals):
     estimates = []
     for i in range(len(lnDataframes)):
         lnODdf = pd.read_json(lnDataframes[i], orient='table')
-        popt, last_time_point = predict_curve(lnODdf, curve, [-2, 0])
+        popt, last_time_point, r = predict_curve(lnODdf, curve, [-2, 0])
 
         if len(popt) != 0:
             first_time_time = lnODdf.index[0]
@@ -319,7 +319,7 @@ app.layout = html.Div([
     html.Div(children=[
         html.H3("Tube Selector", style={'textAlign': 'center'}),
         dcc.Dropdown(newNames, id = 'tube-dropdown')],
-        style={'flex': 1, 'width': '30%', 'marginLeft': '35%'}
+        style={'flex': 1, 'width': '30%', 'marginLeft': '35%', 'marginTop': 100}
     ),
 
     # graph 3 is linear OD graph
@@ -387,6 +387,15 @@ app.layout = html.Div([
         (1000 per tube) and display them on the scatter plot. This process takes about 
         3 seconds to display the graph Note, this data does not update in real-time. 
         In order to see the latest data, click the device button again.''',
+        html.H4("Predict Curves"),
+        '''Below the tube renaming table, there are two graphs that display the OD data from one select tube. The top 
+        graph shows the original OD data, while the bottom graph shows the natural log of the data. To get a prediction, 
+        first select the tube you want to work with via the dropdown menu. Then use the slider on the side of the graph 
+        to set the target OD value you want the predict. Finally use the prediction curve slider to 
+        select which data is used to make the prediction. Your selected range of data will be highlighted in orange. 
+        The predicted growth curve will be displayed in green and the estimated date and time of when the strain reaches 
+        the desired OD target with be shown in a purple box on the graph. To make small adjustments to the prediction, 
+        you can adjust the offset of the clear OD value''',
         html.H4("Rename Traces"),
         '''To rename the traces on the graph, simply input the names of the bateria 
         strains that correspond to each tube.''',
@@ -424,7 +433,8 @@ app.layout = html.Div([
     dcc.Store(id='ODdf_original_store'),
     dcc.Store(id='IODR_store'),
     dcc.Store(data=newNames, id='newNames_store'),
-    dcc.Store(id='lnDataframes_store')
+    dcc.Store(id='lnDataframes_store'),
+    dcc.Store(id='zoom_vals_store')
 
 ])
 
@@ -592,9 +602,10 @@ def update_graph(device, rename_button, ln_tube, name_1, name_2, name_3, name_4,
     State('tube-6-target', 'value'),
     State('tube-7-target', 'value'),
     State('tube-8-target', 'value'),
-    State('lnDataframes_store', 'data')
+    State('lnDataframes_store', 'data'),
+    State('zoom_vals_store', 'data')
 )
-def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_selection_slider, blank_value_input, newNames, tube_1_target, tube_2_target,  tube_3_target, tube_4_target, tube_5_target, tube_6_target, tube_7_target, tube_8_target, lnDataframes):
+def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_selection_slider, blank_value_input, newNames, tube_1_target, tube_2_target,  tube_3_target, tube_4_target, tube_5_target, tube_6_target, tube_7_target, tube_8_target, lnDataframes, zoom_vals):
     # read the dataframe in from the storage component
     ODdf_original = pd.read_json(ODdf_original_json, orient='table')
     #ODdf_original.index = ODdf_original.index - pd.Timedelta(4, 'h')
@@ -633,7 +644,8 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
     # print("lnODdf", lnODdf)
 
     # use predict_curve function to predict the curve and get the last time point as a float
-    popt, last_time_point = predict_curve(lnODdf, linear_curve, data_selection_slider)
+    popt, last_time_point, r = predict_curve(lnODdf, linear_curve, data_selection_slider)
+    print("R value:  ", r)
     # lnFigure = px.scatter(lnODdf, x = 'time', y = 'lnOD')
     # linearFigure = px.scatter(lnODdf, x = 'time', y = 'OD')
 
@@ -655,6 +667,9 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
             mode='markers',
             name='lnOD',
             meta='lnOD',
+            marker=dict(
+                color='blue'
+            ),
             legendgroup="ln traces",
             legendgrouptitle_text="ln traces",
             hovertemplate='Time: %{x}' +
@@ -675,6 +690,9 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
             mode='markers',
             name='OD',
             meta='OD',
+            marker=dict(
+                color='blue'
+            ),
             legendgroup="linear traces",
             legendgrouptitle_text="linear traces",
             hovertemplate='Time: %{x}' +
@@ -744,6 +762,9 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
                 mode='lines',
                 name='lnOD prediction',
                 meta='lnOD prediction',
+                marker=dict(
+                    color='green' if r**2 > 0.9 else 'red'
+                ),
                 legendgroup="ln traces",
                 hovertemplate='Time: %{x}' +
                               '<br>lnOD: %{y}<br>' +
@@ -782,6 +803,9 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
                 x=t_predict,
                 y=y_predict_lin,
                 mode='lines',
+                marker=dict(
+                    color='green' if r**2 > 0.9 else 'red'
+                ),
                 name='OD prediction',
                 meta='OD prediction',
                 legendgroup="linear traces",
@@ -803,7 +827,7 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
                 name="Selection",
                 meta="Selection",
                 marker=dict(
-                    color="blue"
+                    color="orange"
                 ),
                 hovertemplate='Time: %{x}' +
                               '<br>OD: %{y}<br>' +
@@ -844,7 +868,13 @@ def update_predict_graphs(fit_tube, ODdf_original_json, OD_target_slider, data_s
         )
     predict_figure.update_layout(legend_tracegroupgap=320)
     predict_figure.add_hline(y=OD_target_slider, line_width=2, line_dash='dash', row=1, col=1)
-    predict_figure.update_xaxes(matches='x')
+    if len(zoom_vals) != 0:
+        if zoom_vals[0] is True:
+            predict_figure.update_xaxes(matches='x', autorange=True)
+        else:
+            predict_figure.update_xaxes(matches='x', range=zoom_vals)
+    else:
+        predict_figure.update_xaxes(matches='x')
 
     return predict_figure
 
@@ -893,6 +923,26 @@ def update_estimates(rename_button, ODdf_original_json, tube_1_target, tube_2_ta
     estimates = estimate_times(lnDataframes, linear_curve, targets)
     print("estimate times values", estimates)
     return estimates[0], estimates[1], estimates[2], estimates[3], estimates[4], estimates[5], estimates[6], estimates[7]
+
+@app.callback(
+    Output('zoom_vals_store', 'data'),
+    Input('linearODgraph', 'relayoutData')
+)
+def zoom_event(relayout_data):
+    data = []
+    if relayout_data is not None:
+        if 'xaxis.range[0]' in relayout_data:
+            data.append(relayout_data['xaxis.range[0]'])
+            data.append(relayout_data['xaxis.range[1]'])
+            #data2 = relayout_data['xaxis.autorange']
+            print(data)
+            #print(data2)
+        else:
+            data = []
+        if 'xaxis.autorange' in relayout_data:
+            data.append(relayout_data['xaxis.autorange'])
+            print(data)
+    return data
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='0.0.0.0', port=8050)
