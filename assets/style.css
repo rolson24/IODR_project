@@ -4,8 +4,8 @@
 
 #button-div {
 	flex: 1;
-	width: 40%;
-	height: 100;
+	width: 60%;
+	height: 70;
 	float: left;
 	margin-top: 50;
 }
@@ -14,7 +14,7 @@
     flex: 1;
     float: left;
     margin-left: 15%;
-	width: 500px;
+	width: 700px;
 	height: 200px;
 }
 
@@ -34,21 +34,46 @@
 }
 .tube-input {
     text-align: left;
+    padding: 20;
+}
+.tube-input-box {
+    width: 50%;
+    marginLeft: 25%
 }
 .IODR-button {
     flex: 1;
-    margin-right: 30px;
-	margin-top: 50px;,
+    margin-right: 10%;
+	margin-top: 30px;
+	float: left;
 }
-#rename-button {
-    flex; 1;
+.download-button {
+    flex: 1;
+    margin-right: 10%;
+    margin-top: 30px;
     float: right;
-    margin-right: 15%;
+}
+#update-button {
+    flex: 1;
+    float: right;
+    margin-right: 10%;
     margin-top: 90px;
 }
-#rename-div {
+#clear-button {
+    flex: 1;
+    float: right;
+    margin-right: 10%;
+    margin-top: 90px;
+}
+#download-table-button {
+    flex: 1;
+    float: right;
+    margin-right: 10%;
+    margin-top: 90px;
+}
+#update-div {
     height: 300px;
 }
+
 H4{
     margin-bottom: 5px;
 }

@@ -8,3 +8,4 @@ rq
 whitenoise==5.2.0
 plotly
 scipy
+dash-bootstrap-components

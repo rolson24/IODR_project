@@ -74,7 +74,7 @@ def get_OD_dataframe(device, chIDs, readAPIkeys):
     df8 = pd.concat([df7, df5])
     print("df8 ", df8)
 
-    return df8
+    return df8, df4
 
 
 # Not being used
@@ -126,7 +126,7 @@ def get_temp_data(device, chIDs, readAPIkeys):
     readAPIkey = readAPIkeys[3]
 
     # get data from Thingspeak
-    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=1500'.format(channel_id=chID)
+    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=8000'.format(channel_id=chID)
     # myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?start=2021-09-20'.format(channel_id = chID)
     # print(myUrl)
     r = requests.get(myUrl)
@@ -160,10 +160,24 @@ def get_temp_data(device, chIDs, readAPIkeys):
     }
     df3.rename(columns=tempNames, inplace=True)
 
-    return df3
+    first_time_time = df3.index[0]
+    last_time_time = df3.index[-1]
+    print("df4", df3)
+    print("first time ", first_time_time)
+    print("last time ", last_time_time)
+
+    df4 = df3.loc[(df3.index > (last_time_time - pd.Timedelta(2, 'h'))) & (df3.index < last_time_time)]
+
+    df5 = df3.loc[(df3.index > first_time_time) & (df3.index < last_time_time - pd.Timedelta(2, 'h'))]
+    df6 = df5.iloc[::10]
+
+    df8 = pd.concat([df6, df4])
+    print("df8 ", df8)
+
+    return df8, df3
 
 
-def format_ln_data(dataframe, tube_num, blank_value=0.01):
+def format_ln_data(dataframe, tube_num, blank_value=0):
     """Returns a tuple of a ln transformed dataframe and the last time value
     in the dataframe as a datetime object
 
@@ -186,10 +200,10 @@ def format_ln_data(dataframe, tube_num, blank_value=0.01):
 
     # rename tube column to OD
     df2.rename({tube_name: 'OD'}, axis=1, inplace=True)
-    df2['OD'] = df2['OD'] - blank_value
+    df2['OD'] = df2['OD'] + blank_value
     print("OD after blank val sub", df2['OD'])
     # calculate the natural log
-    df2['lnOD'] = np.log(df2['OD'])
+    df2['lnOD'] = np.log(df2['OD'])     # issues
     # print(df2['lnOD'])
     # get rid of empty values and 0 OD values so ln is not inf
     #df2['lnOD'].replace('', np.nan, inplace=True)
