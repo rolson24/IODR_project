@@ -107,53 +107,7 @@ server = app.server
 server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/c')
 
 app.layout = html.Div([
-    # dbc.Navbar(
-    #     dbc.Container(children=[
-    #         html.H1(
-    #             [
-    #                 dbc.Row(
-    #                     [
-    #                         dbc.Col("IODR Data Browser")
-    #                     ]
-    #                 )
-    #                 # "IODR Data Browser"
-    #             ],
-    #             # style={'textAlign': 'left', 'height': 150, 'width': '40%', 'float': 'left'}
-    #
-    #         ),
-    #         # html.Div(children=[
-    #             html.Button(
-    #                 'IODR #1',
-    #                 id='IODR1-button',
-    #                 className='IODR-button',
-    #                 style={'width': 130, 'height': 50}
-    #             ),
-    #             html.Button(
-    #                 'IODR #2',
-    #                 id='IODR2-button',
-    #                 className='IODR-button',
-    #                 style={'width': 130, 'height': 50}
-    #             ),
-    #             html.Button(
-    #                 'IODR #3',
-    #                 id='IODR3-button',
-    #                 className='IODR-button',
-    #                 style={'width': 130, 'height': 50}
-    #             ),
-    #             html.Button(
-    #                 'Download CSV',
-    #                 id='download-button',
-    #                 className='download-button',
-    #                 style={'width': 100, 'height': 50}
-    #             ),
-    #             dcc.Download(id='download-dataframe-csv')
-    #         # ],
-    #         #     id='button-div',
-    #         #     style={'float': 'right', 'height': 150, 'width': '50%'}
-    #         # )
-    #     ]),
-    #     sticky='top'
-    # ),
+
     html.Div(children=[
         html.H1("IODR Viewer", style={'textAlign': 'left', 'height': 70, 'width': '27%', 'float': 'left', 'marginLeft': '3%'}),
         html.Div(children=[
@@ -214,198 +168,6 @@ app.layout = html.Div([
     ),
     # table to input tube names
     html.Div(children=[
-        # html.Table(children=[
-        #     html.Thead(children=[
-        #         html.Tr(children=[
-        #             html.Th(
-        #                 children="Include Tube", scope='col'
-        #             ),
-        #             html.Th(
-        #                 children="Name",
-        #                 scope='col',
-        #                 style={
-        #                     'textAlign': 'center'
-        #                 }
-        #             ),
-        #             html.Th(
-        #                 children="Target OD",
-        #                 scope='col',
-        #                 style={
-        #                     'textAlign': 'center'
-        #                 }
-        #             ),
-        #             html.Th(
-        #                 children="Offset",
-        #                 scope='col',
-        #                 style={
-        #                     'textAlign': 'center', 'width': 10
-        #                 }
-        #             ),
-        #             html.Th(
-        #                 children="Est. Date/Time",
-        #                 scope='col',
-        #                 style={
-        #                     'textAlign': 'center', 'width': '30%'
-        #                 }
-        #             )
-        #         ])
-        #     ]),
-        #     html.Tbody(children=[
-        #         html.Td(
-        #             children=[
-        #                 dcc.Checklist(
-        #                     oldNames,
-        #                     inline=True,
-        #                     labelStyle=dict(
-        #                         textAlign='right',
-        #                         padding=10
-        #                     ),
-        #                     id='include-checklist'
-        #                 ),
-        #             ],
-        #             rowSpan=0
-        #         ),
-        #         html.Tr(children=[
-        #             html.Td(
-        #                 dcc.Input(id='tube-1-name', value=oldNames[0]),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-1-target', value=.5),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-1-offset', value=0, className='tube-input-box', style={
-        #                     'width': '50%', 'marginLeft': '25%'
-        #                 }),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 id='tube-1-est'
-        #             )
-        #         ]),
-        #         html.Tr(children=[
-        #             html.Td(
-        #                 dcc.Input(id='tube-2-name', value=oldNames[1]),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-2-target', value=.5),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-2-offset', value=0),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 id='tube-2-est'
-        #             )
-        #         ]),
-        #         html.Tr(children=[
-        #             html.Td(
-        #                 dcc.Input(id='tube-3-name', value=oldNames[2]),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-3-target', value=.5),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-3-offset', value=0),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 id='tube-3-est'
-        #             )
-        #         ]),
-        #         html.Tr(children=[
-        #             html.Td(
-        #                 dcc.Input(id='tube-4-name', value=oldNames[3]),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-4-target', value=.5),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-4-offset', value=0),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 id='tube-4-est'
-        #             )
-        #         ]),
-        #         html.Tr(children=[
-        #             html.Td(
-        #                 dcc.Input(id='tube-5-name', value=oldNames[4]),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-5-target', value=.5),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-5-offset', value=0),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 id='tube-5-est'
-        #             )
-        #         ]),
-        #         html.Tr(children=[
-        #             html.Td(
-        #                 dcc.Input(id='tube-6-name', value=oldNames[5]),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-6-target', value=.5),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-6-offset', value=0),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 id='tube-6-est'
-        #             )
-        #         ]),
-        #         html.Tr(children=[
-        #             html.Td(
-        #                 dcc.Input(id='tube-7-name', value=oldNames[6]),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-7-target', value=.5),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-7-offset', value=0),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 id='tube-7-est'
-        #             )
-        #         ]),
-        #         html.Tr(children=[
-        #             html.Td(
-        #                 dcc.Input(id='tube-8-name', value=oldNames[7]),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-8-target', value=.5),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 dcc.Input(id='tube-8-offset', value=0),
-        #                 className='tube-input'
-        #             ),
-        #             html.Td(
-        #                 id='tube-8-est'
-        #             )
-        #         ])
-        #     ]),
-
-
             html.Div(children=[
                 dash_table.DataTable(
                     id='test_datatable',
@@ -853,6 +615,7 @@ def download_csv(download_button, ODdf_original_full_json, device):
     ODdf_original_full = pd.read_json(ODdf_original_full_json, orient='table')
     return dcc.send_data_frame(ODdf_original_full.to_csv, f"IODR{device + 1}.csv")
 
+
 @app.callback(
     Output('download-table-csv', 'data'),
     Input('download-table-button', 'n_clicks'),
@@ -863,6 +626,7 @@ def download_csv(download_button, ODdf_original_full_json, device):
 def download_table(download_table_button, tables_list, device_num):
     table_df = pd.read_json(tables_list[device_num], orient='table')
     return dcc.send_data_frame(table_df.to_csv, f"IODR_{device_num + 1}_estimates_table.csv")
+
 
 # @app.callback(
 #     Output('tube-1-target', 'value'),
@@ -906,6 +670,7 @@ def update_tube_dropdown(tables_list, device_num, ln_tube):
         tube_index = 0
 
     return newNames, newNames[tube_index]
+
 
 # callback for updating the main graph and tube dropdown when a new IODR is loaded
 # or the rename tubes button is pressed
