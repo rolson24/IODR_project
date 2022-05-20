@@ -226,20 +226,20 @@ def predict_curve(dataframe, curve, slider_vals):
     df2 = df.loc[(df.index > (last_time_point + slider_vals[0])) & (df.index < last_time_point + slider_vals[1])]
     df2.dropna(inplace=True)
 
-    # print("begin selection: ", (last_time_point + slider_vals[0]))
-    # print("end selection: ", last_time_point + slider_vals[1])
+    print("begin selection: ", (last_time_point + slider_vals[0]))
+    print("end selection: ", last_time_point + slider_vals[1])
 
-    # print("cleaned lnOD ")
-    # print(df2)
+    print("cleaned lnOD ")
+    print("df2", df2)
     curve_info = [0, 0]
     if len(df2['lnOD']) > 2:
         # do the curve fit
         # popt, pcov = curve_fit(curve, df2.index, df2['lnOD'])
         curve_info[0], curve_info[1], r, p, se = linregress(df2.index, df2['lnOD'])
         # print("popt", popt)
-        # print("slope, intercept: ", curve_info)
+        print("slope, intercept: ", curve_info)
     else:
-        # print('no data')
+        print('no data')
         # popt = np.array([])  # need to figure out what this should actually be
         curve_info = []
         r = 0

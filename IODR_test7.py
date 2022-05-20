@@ -71,7 +71,8 @@ def estimate_times(lnDataframes, curve, target_vals):
     estimates = []
     for i in range(len(lnDataframes)):
         lnODdf = pd.read_json(lnDataframes[i], orient='table')
-        popt, last_time_point, r = predict_curve(lnODdf, curve, [-35, -30])
+        print("lnODdf",  lnODdf)
+        popt, last_time_point, r = predict_curve(lnODdf, curve, [-2, 0])
 
         if len(popt) != 0:
             first_time_time = lnODdf.index[0]
