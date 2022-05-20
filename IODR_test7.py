@@ -4,12 +4,7 @@ from dash_bootstrap_components._components.Container import Container
 from plotly.subplots import make_subplots
 from whitenoise import WhiteNoise
 
-from functions import get_OD_dataframe as get_OD_dataframe
-from functions import get_temp_data as get_temp_data
-from functions import format_OD_data as format_OD_data
-from functions import format_ln_data as format_ln_data
-from functions import rename_tubes as rename_tubes
-from functions import predict_curve as predict_curve
+from functions import *
 
 import numpy as np
 import pandas as pd
@@ -41,8 +36,6 @@ devNames = ['IODR #1', 'IODR #2', 'IODR #3']
 oldNames = ['tube 1', 'tube 2', 'tube 3', 'tube 4', 'tube 5', 'tube 6', 'tube 7', 'tube 8']
 # needs to be put in dcc.Store
 originalNames = ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'field7', 'field8']
-
-# dataFrames = []
 
 numCallbacks = 0
 
@@ -82,9 +75,8 @@ def estimate_times(lnDataframes, curve, target_vals):
 
         if len(popt) != 0:
             first_time_time = lnODdf.index[0]
-            last_time_time = lnODdf.index[-1]
-            print("add predictions")
-            print(target_vals)
+            # last_time_time = lnODdf.index[-1]
+
             # get where the ln curve intercepts the target line
             intercept_x = (np.log(float(target_vals[i])) - popt[1]) / popt[0]  # need to fix!!!!
             time_intercept_x = (intercept_x * pd.Timedelta(1, 'h')) + first_time_time  # need to fix!!!
@@ -201,29 +193,25 @@ app.layout = html.Div([
                 ),
 
             ],
-            style={'width': 600, 'flex': 1, 'float': 'left', 'marginLeft': 100}
-        ),
-            # ],
-            # id='tube-name-table'
-        # ),
-        html.Button(
-            'Download table',
-            id='download-table-button',
-            style={'width': 100, 'height': 60, 'font-size': 20}
-        ),
-        html.Button(
-            'Clear',
-            id='clear-button',
-            style={'width': 100, 'height': 60, 'font-size': 20}
-        ),
-        html.Button(
-            'Update Tubes',
-            id='update-button',
-            style={'width': 100, 'height': 60, 'font-size': 20}
-        ),
-        dcc.Download('download-table-csv')
+                style={'width': 600, 'flex': 1, 'float': 'left', 'marginLeft': 100}
+            ),
 
-    ],
+            html.Button(
+                'Download table',
+                id='download-table-button',
+                style={'width': 100, 'height': 60, 'font-size': 20}
+            ),
+            html.Button(
+                'Clear',
+                id='clear-button',
+                style={'width': 100, 'height': 60, 'font-size': 20}
+            ),
+            html.Button(
+                'Update Tubes',
+                id='update-button',
+                style={'width': 100, 'height': 60, 'font-size': 20}
+            ),
+            dcc.Download('download-table-csv')],
         id='update-div'
     ),
     html.Br(),
@@ -291,7 +279,7 @@ app.layout = html.Div([
 
     ),
     html.Br(),
-    html.Div(),
+    # html.Div(),
     html.Div(children=[
         html.H2("Instructions for use:", style={'textAlign': 'center'}),
         html.Br(),
@@ -398,28 +386,13 @@ app.layout = html.Div([
     Output('ODdf_original_full_store', 'data'),
     Output('ODdf_original_store', 'data'),
     Output('temp_df_store', 'data'),
-    # Output('lnDataframes_store', 'data'),
-    # Output('tube-1-name', 'value'),
-    # Output('tube-2-name', 'value'),
-    # Output('tube-3-name', 'value'),
-    # Output('tube-4-name', 'value'),
-    # Output('tube-5-name', 'value'),
-    # Output('tube-6-name', 'value'),
-    # Output('tube-7-name', 'value'),
-    # Output('tube-8-name', 'value'),
     Input('IODR1-button', 'n_clicks'),
     Input('IODR2-button', 'n_clicks'),
     Input('IODR3-button', 'n_clicks')
-    # Input('clear-button', 'n_clicks'),
-    # State('newNames_store', 'data'),
-    # State('IODR_store', 'data')
 )
 def update_which_IODR(IODR1_button, IODR2_button, IODR3_button):  # load data on switch
     # checks which button was pressed
     changed_id = [p['prop_id'] for p in callback_context.triggered][0]
-
-    # for i in range(len(current_names)):
-    #     new_names[i] = current_names[i].replace(f"{i + 1}_", "")
 
     if 'IODR1-button' in changed_id:
         device_num = 0
@@ -433,11 +406,6 @@ def update_which_IODR(IODR1_button, IODR2_button, IODR3_button):  # load data on
     ODdf_original, ODdf_original_full = get_OD_dataframe(device_num, chIDs, readAPIkeys)
     TEMPdf, TEMPdf_full = get_temp_data(device_num, chIDs, readAPIkeys)
 
-    # lnDataframes = []  # Get rid of store component and just do it all here
-    # for i in range(8):
-    #     lndf = format_ln_data(ODdf_original, i).to_json(date_format='iso', orient='table')
-    #     lnDataframes.append(lndf)
-
     return device_num, ODdf_original_full.to_json(date_format='iso', orient='table'), ODdf_original.to_json(date_format='iso', orient='table'), TEMPdf.to_json(date_format='iso', orient='table')
 
 
@@ -448,43 +416,16 @@ def update_which_IODR(IODR1_button, IODR2_button, IODR3_button):  # load data on
     Input('clear-button', 'n_clicks'),
     Input('IODR_store', 'data'),
     State('table_store', 'data'),
-    # State('lnDataframes_store', 'data'),
     State('ODdf_original_store', 'data'),
     State('test_datatable', 'data'),
-    # State('tube-1-name', 'value'),
-    # State('tube-2-name', 'value'),
-    # State('tube-3-name', 'value'),
-    # State('tube-4-name', 'value'),
-    # State('tube-5-name', 'value'),
-    # State('tube-6-name', 'value'),
-    # State('tube-7-name', 'value'),
-    # State('tube-8-name', 'value'),
-    # State('tube-1-target', 'value'),
-    # State('tube-2-target', 'value'),
-    # State('tube-3-target', 'value'),
-    # State('tube-4-target', 'value'),
-    # State('tube-5-target', 'value'),
-    # State('tube-6-target', 'value'),
-    # State('tube-7-target', 'value'),
-    # State('tube-8-target', 'value')
 )
-def update_table_df(update_button, clear_button, device_num, tables_list, ODdf_original_json, datatable_dict,
-                    # name_1, name_2, name_3, name_4,
-                    # name_5, name_6, name_7, name_8, tube_1_target, tube_2_target, tube_3_target, tube_4_target,
-                    # tube_5_target, tube_6_target, tube_7_target, tube_8_target
-                    ):
+def update_table_df(update_button, clear_button, device_num, tables_list, ODdf_original_json, datatable_dict):
     table_df = pd.read_json(tables_list[device_num], orient='table')
     ODdf_original = pd.read_json(ODdf_original_json, orient='table')
 
     datatable_df = pd.DataFrame.from_records(datatable_dict)
 
-
-    # print("table_df['offset']", table_df['offset'])     # NEED TO FIX BUG SO THAT OFFSET IS UPDATED AFTER RE-DISPLAY
-
-    # newNames = [name_1, name_2, name_3, name_4, name_5, name_6, name_7, name_8]
     newNames = datatable_df['name']
-    # targets = [tube_1_target, tube_2_target, tube_3_target, tube_4_target, tube_5_target, tube_6_target, tube_7_target,
-    #            tube_8_target]
     targets = datatable_df['target']
 
 
@@ -551,30 +492,6 @@ def update_table_df(update_button, clear_button, device_num, tables_list, ODdf_o
 
 
 @app.callback(
-    # Output('tube-1-est', 'children'),
-    # Output('tube-2-est', 'children'),
-    # Output('tube-3-est', 'children'),
-    # Output('tube-4-est', 'children'),
-    # Output('tube-5-est', 'children'),
-    # Output('tube-6-est', 'children'),
-    # Output('tube-7-est', 'children'),
-    # Output('tube-8-est', 'children'),
-    # Output('tube-1-target', 'value'),
-    # Output('tube-2-target', 'value'),
-    # Output('tube-3-target', 'value'),
-    # Output('tube-4-target', 'value'),
-    # Output('tube-5-target', 'value'),
-    # Output('tube-6-target', 'value'),
-    # Output('tube-7-target', 'value'),
-    # Output('tube-8-target', 'value'),
-    # Output('tube-1-name', 'value'),
-    # Output('tube-2-name', 'value'),
-    # Output('tube-3-name', 'value'),
-    # Output('tube-4-name', 'value'),
-    # Output('tube-5-name', 'value'),
-    # Output('tube-6-name', 'value'),
-    # Output('tube-7-name', 'value'),
-    # Output('tube-8-name', 'value'),
     Output('test_datatable', 'data'),         # need to test this
     Input('table_store', 'data'),
     State('IODR_store', 'data'),
@@ -590,7 +507,6 @@ def update_table_display(tables_list, device_num):
         times.append(html.Div(children=estimates[i],
                               style={'color': 'green'} if r_vals[i] > 0.9 else {'color': 'red'}))
 
-    targets = table_df['target']
     current_names = table_df['name']    # need to fix this so that it shows up correctly in table
     new_names = [""] * 8
     for i in range(len(new_names)):
@@ -598,10 +514,6 @@ def update_table_display(tables_list, device_num):
         table_df['name'].iloc[i] = current_names[i].replace(f"{i+1}_", "")
 
     return table_df.to_dict('records')
-        # times[0], times[1], times[2], times[3], times[4], times[5], times[6], times[7], targets[0], targets[1], \
-        #    targets[2], targets[3], targets[4], targets[5], targets[6], targets[7], new_names[0], new_names[1], \
-        #    new_names[2], new_names[3], new_names[4], new_names[5], new_names[6], new_names[7], \
-
 
 
 @app.callback(
@@ -628,32 +540,6 @@ def download_table(download_table_button, tables_list, device_num):
     return dcc.send_data_frame(table_df.to_csv, f"IODR_{device_num + 1}_estimates_table.csv")
 
 
-# @app.callback(
-#     Output('tube-1-target', 'value'),
-#     Output('tube-2-target', 'value'),
-#     Output('tube-3-target', 'value'),
-#     Output('tube-4-target', 'value'),
-#     Output('tube-5-target', 'value'),
-#     Output('tube-6-target', 'value'),
-#     Output('tube-7-target', 'value'),
-#     Output('tube-8-target', 'value'),
-#     Input('clear-button', 'n_clicks'),
-#     State('tube-1-target', 'value'),
-#     State('tube-2-target', 'value'),
-#     State('tube-3-target', 'value'),
-#     State('tube-4-target', 'value'),
-#     State('tube-5-target', 'value'),
-#     State('tube-6-target', 'value'),
-#     State('tube-7-target', 'value'),
-#     State('tube-8-target', 'value')
-# )
-# def clear_targets(clear_button, tube_1_target, tube_2_target, tube_3_target, tube_4_target, tube_5_target,
-#                   tube_6_target, tube_7_target, tube_8_target):
-#     changed_id = [p['prop_id'] for p in callback_context.triggered][0]
-#     if 'clear-button' in changed_id:
-#         return 0, 0, 0, 0, 0, 0, 0, 0
-#     else:
-#         return tube_1_target, tube_2_target, tube_3_target, tube_4_target, tube_5_target, tube_6_target, tube_7_target, tube_8_target
 
 @app.callback(
     Output('tube-dropdown', 'options'),
@@ -676,86 +562,30 @@ def update_tube_dropdown(tables_list, device_num, ln_tube):
 # or the rename tubes button is pressed
 @app.callback(
     Output('graph1', 'figure'),
-    # Output('ODdf_update_store', 'data'),
-    # Output('tube-dropdown', 'options'),
-    # Output('tube-dropdown', 'value'),
-    # Output('ODdf_original_store', 'data'),
-    # Output('newNames_store', 'data'),
-    # Output('lnDataframes_store', 'data'),
     Input('ODdf_update_store', 'data'),
     Input('table_store', 'data'),
     State('temp_df_store', 'data'),
-    # Input('update-button', 'n_clicks'),
-    # State('tube-dropdown', 'value'),
     State('IODR_store', 'data'),
-    # State('tube-1-name', 'value'),
-    # State('tube-2-name', 'value'),
-    # State('tube-3-name', 'value'),
-    # State('tube-4-name', 'value'),
-    # State('tube-5-name', 'value'),
-    # State('tube-6-name', 'value'),
-    # State('tube-7-name', 'value'),
-    # State('tube-8-name', 'value'),
-    # State('newNames_store', 'data')
 )
 def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
     ODdf_update = pd.read_json(ODdf_update_store, orient='table')
     TEMPdf = pd.read_json(temp_df_store, orient='table')
     table_df = pd.read_json(tables_list[device_num], orient='table')
 
-    newNames = table_df['name']
-
-    # get the index of the current tube selected in the dropdown to fix a bug
-    # try:
-    #     tube_index = newNamesList[device_num].index(ln_tube) if ln_tube != None else 0
-    # except:
-    #     tube_index = 0
-    #
-    # newNames = newNamesList[device_num]
-    # # put the new names into the list
-    # newNames[0] = "1_" + name_1 if (name_1 != None and name_1 != "") else newNames[0]
-    # newNames[1] = "2_" + name_2 if (name_2 != None and name_2 != "") else newNames[1]
-    # newNames[2] = "3_" + name_3 if (name_3 != None and name_3 != "") else newNames[2]
-    # newNames[3] = "4_" + name_4 if (name_4 != None and name_4 != "") else newNames[3]
-    # newNames[4] = "5_" + name_5 if (name_5 != None and name_5 != "") else newNames[4]
-    # newNames[5] = "6_" + name_6 if (name_6 != None and name_6 != "") else newNames[5]
-    # newNames[6] = "7_" + name_7 if (name_7 != None and name_7 != "") else newNames[6]
-    # newNames[7] = "8_" + name_8 if (name_8 != None and name_8 != "") else newNames[7]
-    #
-    # newNamesList[device_num] = newNames
-    # print(newNames)
     # make the subplots object
     figure1 = make_subplots(
         rows=3,
         cols=1,
-        subplot_titles=("OD data", "Temperature", "OD Log Data"),
-        row_heights=[0.4, 0.2, 0.4],
+        subplot_titles=("OD data", "OD Log Data", "Temperature"),
+        row_heights=[0.4, 0.4, 0.2],
         vertical_spacing=0.1)
 
-    # checks which button was pressed
-    changed_id = [p['prop_id'] for p in callback_context.triggered][0]
     if device_num == 0:
         figure1.update_layout(title="IODR #1")
     elif device_num == 1:
         figure1.update_layout(title="IODR #2")
     elif device_num == 2:
         figure1.update_layout(title="IODR #3")
-
-    # retrieve the data from Thingspeak
-    # ODdf_original = get_OD_dataframe(device_num, chIDs, readAPIkeys)
-
-    # lnDataframes = []       # moved to update_table
-    # for i in range(len(newNames)):
-    #     lndf = format_ln_data(ODdf_original, i).to_json(date_format='iso', orient='table')
-    #     lnDataframes.append(lndf)
-
-    # print("ODdf_original", type(ODdf_original.index[0]), ODdf_original)
-    # ODdf = format_OD_data(ODdf_original)
-    # print("ODdf", type(ODdf.index[0]), ODdf)
-    # TEMPdf = get_temp_data(device_num, chIDs, readAPIkeys)
-
-
-
 
     # add the traces of each tube
     for col in ODdf_update.columns:
@@ -785,7 +615,7 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
                 marker_size=5,
                 name=f"{col} ln"
             ),
-            row=3,
+            row=2,
             col=1
         )
 
@@ -805,7 +635,7 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
                               '<br>Temp: %{y}<br>' +
                               'Trace: %{meta}<br>' +
                               '<extra></extra>'),
-            row=2,
+            row=3,
             col=1)
 
     # align the x-axis
@@ -813,7 +643,7 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
     # de-align the y-axes
     figure1.update_yaxes(matches=None)
     # set the range for the temperature y-axis
-    figure1.update_yaxes(range=[30, 60], row=2, col=1)
+    figure1.update_yaxes(range=[30, 60], row=3, col=1)
     figure1.update_layout(
         height=1200,
         font=dict(
@@ -838,7 +668,6 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
     Input('data-selection-slider', 'value'),
     Input('blank-val-input', 'value'),
     Input('table_store', 'data'),
-    # State('lnDataframes_store', 'data'),
     State('zoom_vals_store', 'data'),
     State('IODR_store', 'data')
 )
@@ -848,47 +677,24 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
     ODdf_update = pd.read_json(ODdf_update_json, orient='table')
     table_df = pd.read_json(tables_list[device_num], orient='table')
     names = table_df['name'].tolist()
-    # ODdf_original.index = ODdf_original.index - pd.Timedelta(4, 'h')
-
-    # lnDataframes = []
-    # for i in range(len(newNames)):
-    #     lndf = format_ln_data(ODdf_original, newNames[i])
-    #     if lnDataframes[i] is not None:
-    #         lnDataframes.append(lndf)
-    #     else:
-    #         lnDataframes[i] = lndf
-
-    # print("estimate times values", estimate_times(lnDataframes, linear_curve, targets))
-
 
     try:
         blank_value_input = float(blank_value_input)
     except:
         blank_value_input = 0
     if fit_tube != None:
-        # print("index", newNames.index(fit_tube))
+
         # format the data into a dataframe of just the selected tube's OD and lnOD data
         lnODdf = format_ln_data(ODdf_update, names.index(fit_tube),
                                 blank_value=float(blank_value_input))
     else:
-        # print('tube 0')
         lnODdf = format_ln_data(ODdf_update, 0, blank_value=float(blank_value_input))
-    # print("lnODdf", lnODdf)
 
     # use predict_curve function to predict the curve and get the last time point as a float
     popt, last_time_point, r = predict_curve(lnODdf, linear_curve, data_selection_slider)
     print("R value:  ", r)
-    # lnFigure = px.scatter(lnODdf, x = 'time', y = 'lnOD')
-    # linearFigure = px.scatter(lnODdf, x = 'time', y = 'OD')
-
-    # print(type(lnODdf.index[0]))
 
     # create scatter plot for ln data
-
-    try:
-        test = lnODdf.lnOD
-    except:
-        print("failed!!!")
 
     predict_figure = make_subplots(
         rows=2,
@@ -918,7 +724,7 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
         row=2,
         col=1
     )
-    #     )
+
     # create scatter plot for linear data
     predict_figure.add_trace(
         go.Scatter(
@@ -976,21 +782,13 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
         selection_df = lnODdf.loc[
             (lnODdf.index > (last_time_time + data_selection_slider[0] * pd.Timedelta(1, 'h'))) & (
                     lnODdf.index < last_time_time + data_selection_slider[1] * pd.Timedelta(1, 'h'))]
-        # selection_df.index = selection_df.index * pd.Timedelta(1, 'h') + ODdf_original.index[0]
+
         # create array of y coordinates with linear curve calculated earlier
         y_predict = linear_curve(t_predict, popt[0], popt[1])
 
-        # print(type(ODdf_original.index[0]))
-        # ODdf_original['time'] = pd.to_datetime(ODdf_original['created_at']).dt.tz_convert('US/Eastern')
         # change the time predict back to datatime objects
         t_predict = (t_predict * pd.Timedelta(1, 'h')) + ODdf_update.index[0]
 
-        # t_selection = (t_selection * pd.Timedelta(1, 'h')) + ODdf_original.index[0]
-        # print("t selection: ", t_selection)
-        # print(ODdf_original.index[0])
-        # print(type(t_predict[0]), t_predict[0])
-        # print(type(ODdf_original.index[0]), ODdf_original.index[0])
-        # t_predict[0].to_numpy()
         # add the fit line trace
         predict_figure.add_trace(
             go.Scatter(
@@ -1033,7 +831,6 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
         )
         # transform linear y coordinates into ln values
         y_predict_lin = np.exp(y_predict)
-        # print(y_predict_lin)
         # add the ln fit curve trace
         predict_figure.add_trace(
             go.Scatter(
@@ -1079,13 +876,10 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
         # calculate the x coordinate when the ln curve intercepts the target line
         time_intercept_x = (intercept_x * pd.Timedelta(1, 'h')) + first_time_time  # need to fix!!!
 
-        # print(time_intercept_x)
         predict_figure.add_vline(x=time_intercept_x, line_width=2, line_dash='dash', row=1, col=1)
 
         time_intercept_x_str = (time_intercept_x).strftime("%Y-%m-%d %H:%M:%S")
-        first_time_str = (first_time_time - pd.Timedelta(4, 'h')).strftime("%Y-%m-%d %H:%M:%S")
-        # range the axis
-        # predict_figure.update_xaxes(range=[first_time_str, time_intercept_x_str], row=1, col=1)
+        # first_time_str = (first_time_time - pd.Timedelta(4, 'h')).strftime("%Y-%m-%d %H:%M:%S")
 
         predict_figure.add_annotation(
             x=time_intercept_x_str,
@@ -1117,60 +911,6 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
     return predict_figure
 
 
-# NOT NEEDED ANYMORE
-# @app.callback(
-#     Output('tube-1-est', 'children'),
-#     Output('tube-2-est', 'children'),
-#     Output('tube-3-est', 'children'),
-#     Output('tube-4-est', 'children'),
-#     Output('tube-5-est', 'children'),
-#     Output('tube-6-est', 'children'),
-#     Output('tube-7-est', 'children'),
-#     Output('tube-8-est', 'children'),
-#     Input('update-button', 'value'),
-#     Input('ODdf_original_store', 'data'),
-#     State('tube-1-target', 'value'),
-#     State('tube-2-target', 'value'),
-#     State('tube-3-target', 'value'),
-#     State('tube-4-target', 'value'),
-#     State('tube-5-target', 'value'),
-#     State('tube-6-target', 'value'),
-#     State('tube-7-target', 'value'),
-#     State('tube-8-target', 'value'),
-#     State('lnDataframes_store', 'data'))
-# def update_estimates(update_button, ODdf_original_json, tube_1_target, tube_2_target, tube_3_target, tube_4_target,
-#                      tube_5_target, tube_6_target, tube_7_target, tube_8_target, lnDataframes):
-#     ODdf_original = pd.read_json(ODdf_original_json, orient='table')
-#     # ODdf_original.index = ODdf_original.index - pd.Timedelta(4, 'h')
-#
-#     targets = []
-#     targets.append(tube_1_target)
-#     targets.append(tube_2_target)
-#     targets.append(tube_3_target)
-#     targets.append(tube_4_target)
-#     targets.append(tube_5_target)
-#     targets.append(tube_6_target)
-#     targets.append(tube_7_target)
-#     targets.append(tube_8_target)
-#
-#     # lnDataframes = []
-#     # for i in range(len(newNames)):
-#     #     lndf = format_ln_data(ODdf_original, newNames[i])
-#     #     if lnDataframes[i] is not None:
-#     #         lnDataframes.append(lndf)
-#     #     else:
-#     #         lnDataframes[i] = lndf
-#
-#     estimates, r_vals = estimate_times(lnDataframes, linear_curve, targets)
-#     times = []
-#     print("estimate times values", estimates)
-#     for i in range(len(estimates)):
-#         times.append(html.Div(children=estimates[i],
-#                               style={'color': 'green'} if r_vals[i] ** 2 > 0.9 else {'color': 'red'}))
-#
-#     return times[0], times[1], times[2], times[3], times[4], times[5], times[6], times[7]
-
-
 @app.callback(
     Output('zoom_vals_store', 'data'),
     Input('linearODgraph', 'relayoutData')
@@ -1181,14 +921,10 @@ def zoom_event(relayout_data):
         if 'xaxis.range[0]' in relayout_data:
             data.append(relayout_data['xaxis.range[0]'])
             data.append(relayout_data['xaxis.range[1]'])
-            # data2 = relayout_data['xaxis.autorange']
-            print(data)
-            # print(data2)
         else:
             data = []
         if 'xaxis.autorange' in relayout_data:
             data.append(relayout_data['xaxis.autorange'])
-            print(data)
     return data
 
 

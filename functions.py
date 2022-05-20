@@ -46,25 +46,25 @@ def get_OD_dataframe(device, chIDs, readAPIkeys):
     # put the thingspeak data in a dataframe
     df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
 
-    print("the first df", df)
+    # print("the first df", df)
 
     df2 = df.drop('entry_id', axis='columns')
-    print(df2)
+    # print(df2)
     # convert time string to datetime, and switch from UTC to Eastern time
-    print(df2)
+    # print(df2)
     df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
-    print(df2)
+    # print(df2)
     # remove the created_at column
     df3 = df2.drop('created_at', axis='columns')
-    print(df3)
+    # print(df3)
     # set index to time
     df4 = df3.set_index('time')
 
     first_time_time = df4.index[0]
     last_time_time = df4.index[-1]
-    print("df4", df4)
-    print("first time ", first_time_time)
-    print("last time ", last_time_time)
+    # print("df4", df4)
+    # print("first time ", first_time_time)
+    # print("last time ", last_time_time)
 
     df5 = df4.loc[(df4.index > (last_time_time - pd.Timedelta(2, 'h'))) & (df4.index < last_time_time)]
 
@@ -72,7 +72,7 @@ def get_OD_dataframe(device, chIDs, readAPIkeys):
     df7 = df6.iloc[::10]
 
     df8 = pd.concat([df7, df5])
-    print("df8 ", df8)
+    # print("df8 ", df8)
 
     return df8, df4
 
@@ -162,9 +162,9 @@ def get_temp_data(device, chIDs, readAPIkeys):
 
     first_time_time = df3.index[0]
     last_time_time = df3.index[-1]
-    print("df4", df3)
-    print("first time ", first_time_time)
-    print("last time ", last_time_time)
+    # print("df4", df3)
+    # print("first time ", first_time_time)
+    # print("last time ", last_time_time)
 
     df4 = df3.loc[(df3.index > (last_time_time - pd.Timedelta(2, 'h'))) & (df3.index < last_time_time)]
 
@@ -172,7 +172,7 @@ def get_temp_data(device, chIDs, readAPIkeys):
     df6 = df5.iloc[::10]
 
     df8 = pd.concat([df6, df4])
-    print("df8 ", df8)
+    # print("df8 ", df8)
 
     return df8, df3
 
@@ -184,7 +184,7 @@ def format_ln_data(dataframe, tube_num, blank_value=0):
     Arguments:
     dataframe -- pandas dataframe with time
     """
-    print("ln dataframe", dataframe.head())
+    # print("ln dataframe", dataframe.head())
     # get the name of the tube
     tube_name = dataframe.columns[tube_num]
 
@@ -201,7 +201,7 @@ def format_ln_data(dataframe, tube_num, blank_value=0):
     # rename tube column to OD
     df2.rename({tube_name: 'OD'}, axis=1, inplace=True)
     df2['OD'] = df2['OD'] + blank_value
-    print("OD after blank val sub", df2['OD'])
+    # print("OD after blank val sub", df2['OD'])
     # calculate the natural log
     df2['lnOD'] = np.log(df2['OD'])     # issues
     # print(df2['lnOD'])
@@ -220,26 +220,26 @@ def predict_curve(dataframe, curve, slider_vals):
     df.index = (df.index - df.index[0]) / pd.Timedelta(1, 'h')  # this is done here so data gets displayed in datetime
     # get the last time point in a float while here for displaying prediction
     last_time_point = df.index[-1]
-    print(f"last time point val: {last_time_point}")
-    print(f"slider val: {slider_vals}")
+    # print(f"last time point val: {last_time_point}")
+    # print(f"slider val: {slider_vals}")
     # filter data so that only the data within the range is used
     df2 = df.loc[(df.index > (last_time_point + slider_vals[0])) & (df.index < last_time_point + slider_vals[1])]
     df2.dropna(inplace=True)
 
-    print("begin selection: ", (last_time_point + slider_vals[0]))
-    print("end selection: ", last_time_point + slider_vals[1])
+    # print("begin selection: ", (last_time_point + slider_vals[0]))
+    # print("end selection: ", last_time_point + slider_vals[1])
 
-    print("cleaned lnOD ")
-    print(df2)
+    # print("cleaned lnOD ")
+    # print(df2)
     curve_info = [0, 0]
     if len(df2['lnOD']) > 2:
         # do the curve fit
         # popt, pcov = curve_fit(curve, df2.index, df2['lnOD'])
         curve_info[0], curve_info[1], r, p, se = linregress(df2.index, df2['lnOD'])
         # print("popt", popt)
-        print("slope, intercept: ", curve_info)
+        # print("slope, intercept: ", curve_info)
     else:
-        print('no data')
+        # print('no data')
         # popt = np.array([])  # need to figure out what this should actually be
         curve_info = []
         r = 0
