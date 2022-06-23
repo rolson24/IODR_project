@@ -4,7 +4,8 @@ from dash_bootstrap_components._components.Container import Container
 from plotly.subplots import make_subplots
 from whitenoise import WhiteNoise
 
-from functions import *
+from get_data_funs import *
+from predict_funs import *
 
 import numpy as np
 import pandas as pd
@@ -39,70 +40,32 @@ originalNames = ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'fi
 
 numCallbacks = 0
 
+# Thingspeak information
 chIDs = [405675, 441742, 469909, 890567]
 readAPIkeys = ['18QZSI0X2YZG8491', 'CV0IFVPZ9ZEZCKA8', '27AE8M5DG8F0ZE44', 'M7RIW6KSSW15OGR1']
 
-marks = dict()
+# used for creating tick marks on data selection range slider
+range_slider_marks = dict()
 
 for i in range(0, 25):
-    marks[-i] = {'label': f'-{i}'}
+    range_slider_marks[-i] = {'label': f'-{i}'}
 
-print(marks)
+colors = ['#f2a367', '#ed7091', '#61d0ef', '#5bc89b', '#f6cb67', '#de5f46', '#f19ef9', '#6371f2']
 
-# can edit title and legend names
-config = {
-    'edits': {
-        'legendText': True,
-        'titleText': True
-    }
-}
-
-
-def linear_curve(t, a, b):
-    """
-    fit data to linear model
-    """
-    return a * t + b
-
-
-# move to functions file
-def estimate_times(lnDataframes, curve, target_vals):
-    r_vals = []
-    estimates = []
-    for i in range(len(lnDataframes)):
-        lnODdf = pd.read_json(lnDataframes[i], orient='table')
-        print("lnODdf",  lnODdf)
-        popt, last_time_point, r = predict_curve(lnODdf, curve, [-2, 0])
-
-        if len(popt) != 0:
-            first_time_time = lnODdf.index[0]
-            # last_time_time = lnODdf.index[-1]
-
-            # get where the ln curve intercepts the target line
-            intercept_x = (np.log(float(target_vals[i])) - popt[1]) / popt[0]  # need to fix!!!!
-            time_intercept_x = (intercept_x * pd.Timedelta(1, 'h')) + first_time_time  # need to fix!!!
-            time_intercept_x_str = (time_intercept_x).strftime("%Y-%m-%d %H:%M:%S")
-
-            estimates.append(time_intercept_x_str)
-            r_vals.append(r**2)
-
-        else:
-            estimates.append("none")
-            r_vals.append(0)
-    return estimates, r_vals
-
-
+# creates the instance of the dash app
 app = Dash(__name__, external_stylesheets=['/style.css'])
-
+# creates the server to use by heroku server
 server = app.server
 
-# for heroku server
+# for heroku server, will find source
 server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/c')
 
+# the html layout of the app
 app.layout = html.Div([
-
+    # this is the sticky header division at the top of the page
     html.Div(children=[
-        html.H1("IODR Viewer", style={'textAlign': 'left', 'height': 70, 'width': '27%', 'float': 'left', 'marginLeft': '3%'}),
+        html.H1("IODR #1 Viewer", id='header-text',
+                style={'textAlign': 'left', 'height': 70, 'width': '27%', 'float': 'left', 'marginLeft': '3%'}),
         html.Div(children=[
             html.Button(
                 'IODR #1',
@@ -114,7 +77,7 @@ app.layout = html.Div([
                 'IODR #2',
                 id='IODR2-button',
                 className='IODR-button',
-                style={'width': 130, 'height': 50,'font-size': 20}
+                style={'width': 130, 'height': 50, 'font-size': 20}
             ),
             html.Button(
                 'IODR #3',
@@ -138,14 +101,14 @@ app.layout = html.Div([
             'padding': 0,
             # 'overflow': 'hidden',
             # 'background-color': '#333',
-            'position': 'fixed',
-            'width': '100%',
-            'zIndex': 999,
+            'position': 'fixed',  # make the header sticky
+            'width': '100%',  # 100% of the page
+            'zIndex': 999,  # on top of all other divs
             'backgroundColor': 'white',
             'top': 0,
             'border-style': 'solid',
             'borderColor': 'black',
-            'borderWidth': '0px 0px 3px'
+            'borderWidth': '0px 0px 3px'  # bottom border only
         },
         id='fixed-div'
     ),
@@ -161,58 +124,62 @@ app.layout = html.Div([
     ),
     # table to input tube names
     html.Div(children=[
-            html.Div(children=[
-                dash_table.DataTable(
-                    id='test_datatable',
-                    columns=[
-                        {'name': 'Tube Name', 'id': 'name', 'type': 'text', 'editable': True},
-                        {'name': 'Target OD', 'id': 'target', 'type': 'numeric', 'editable': True},
-                        {'name': 'OD Offset', 'id': 'offset', 'type': 'numeric', 'editable': True},
-                        {'name': 'Est. Time/Date', 'id': 'estimate', 'type': 'text', 'editable': False},
-                        {'name': 'R value', 'id': 'r value', 'type': 'numeric', 'editable': False}
-                    ],
-                    data=[
-                        {'name': 'tube 1'},
-                        {'target': .5}
-                    ],
-                    style_data_conditional=[
-                        {'if': {'column_id': 'estimate', 'filter_query': '{r value} < .9'}, 'color': 'red'},  # NEED TO FIGURE THIS OUT
-                        {'if': {'column_id': 'r value', 'filter_query': '{r value} < .9'},
-                         'color': 'red'},  # NEED TO FIGURE THIS OUT
-                        {'if': {'column_id': 'estimate', 'filter_query': '{r value} eq none'},
-                         'color': 'red'},  # NEED TO FIGURE THIS OUT
-                        {'if': {'column_id': 'r value', 'filter_query': '{r value} eq none'},
-                         'color': 'red'},  # NEED TO FIGURE THIS OUT
+        html.Div(children=[
+            # the dash table element
+            dash_table.DataTable(
+                id='test_datatable',
+                # create the columns
+                columns=[
+                    {'name': 'Tube Name', 'id': 'name', 'type': 'text', 'editable': True},
+                    {'name': 'Target OD', 'id': 'target', 'type': 'numeric', 'editable': True},
+                    {'name': 'OD Offset', 'id': 'offset', 'type': 'numeric', 'editable': True},
+                    {'name': 'Est. Time/Date', 'id': 'estimate', 'type': 'text', 'editable': False},
+                    {'name': 'R value', 'id': 'r value', 'type': 'numeric', 'editable': False}
+                ],
+                # input some data on startup
+                data=[
+                    {'name': 'tube 1'},
+                    {'target': .5}
+                ],
+                # this makes the data red or green depending on the r^2 values of the estimate lines
+                style_data_conditional=[
+                    {'if': {'column_id': 'estimate', 'filter_query': '{r value} < .9'}, 'color': 'red'},
+                    {'if': {'column_id': 'r value', 'filter_query': '{r value} < .9'},
+                     'color': 'red'},
+                    {'if': {'column_id': 'estimate', 'filter_query': '{r value} eq none'},
+                     'color': 'red'},
+                    {'if': {'column_id': 'r value', 'filter_query': '{r value} eq none'},
+                     'color': 'red'},
+                    {'if': {'column_id': 'estimate', 'filter_query': '{r value} > .9'}, 'color': 'green'},
+                    {'if': {'column_id': 'r value', 'filter_query': '{r value} > .9'}, 'color': 'green'}
+                ],
+                fill_width=False,
+                style_table={'overflowX': 'auto'},  # helps size the table
+                style_cell={'minWidth': '160px', 'width': '160px', 'maxWidth': '160px', 'textAlign': 'center'}
+                # style={'width': '50%'}
 
-                        {'if': {'column_id': 'estimate', 'filter_query': '{r value} > .9'}, 'color': 'green'},
-                        {'if': {'column_id': 'r value', 'filter_query': '{r value} > .9'}, 'color': 'green'}
-                    ],
-                    fill_width=False,
-                    style_table={'overflowX': 'auto'},
-                    # style={'width': '50%'}
-
-                ),
-
-            ],
-                style={'width': 600, 'flex': 1, 'float': 'left', 'marginLeft': 100}
             ),
 
-            html.Button(
-                'Download table',
-                id='download-table-button',
-                style={'width': 100, 'height': 60, 'font-size': 20}
-            ),
-            html.Button(
-                'Clear',
-                id='clear-button',
-                style={'width': 100, 'height': 60, 'font-size': 20}
-            ),
-            html.Button(
-                'Update Tubes',
-                id='update-button',
-                style={'width': 100, 'height': 60, 'font-size': 20}
-            ),
-            dcc.Download('download-table-csv')],
+        ],
+            style={'width': 800, 'flex': 1, 'float': 'left', 'marginLeft': 100}
+        ),
+
+        html.Button(
+            'Download table',
+            id='download-table-button',
+            style={'width': 100, 'height': 60, 'font-size': 20}
+        ),
+        html.Button(
+            'Clear',
+            id='clear-button',
+            style={'width': 100, 'height': 60, 'font-size': 20}
+        ),
+        html.Button(
+            'Update Tubes',
+            id='update-button',
+            style={'width': 100, 'height': 60, 'font-size': 20}
+        ),
+        dcc.Download('download-table-csv')],
         id='update-div'
     ),
     html.Br(),
@@ -256,31 +223,32 @@ app.layout = html.Div([
     html.Div(children=[
         html.Div(children=[
             html.H3("Prediction Curve range selection. (Hours before current time)", style={'textAlign': 'center'}),
+            # range slider dash element
             dcc.RangeSlider(
                 min=-24,
                 max=0,
                 step=0.25,
-                marks=marks,
+                marks=range_slider_marks,
                 value=[-5, 0],
                 id='data-selection-slider'
             )],
-            style={'width': '70%', 'float': 'left'}
+            style={'width': '80%', 'float': 'left'}
         ),
         html.Div(children=[
             html.H3("OD offset value", style={'textAlign': 'center'}),
+            # dash input element
             dcc.Input(
                 value=0.01,
                 id='blank-val-input',
                 style={'float': 'right', 'marginRight': 80}
             )],
-            style={'flex': 1, 'marginTop': 15, 'float': 'right', 'width': '25%'}
+            style={'flex': 1, 'marginTop': 15, 'float': 'right', 'width': '20%'}
         ),
     ],
-        style={'flex': 1, 'marginTop': 800}
+        style={'flex': 1, 'marginTop': 800, 'width': '80%'}
 
     ),
     html.Br(),
-    # html.Div(),
     html.Div(children=[
         html.H2("Instructions for use:", style={'textAlign': 'center'}),
         html.Br(),
@@ -337,17 +305,19 @@ app.layout = html.Div([
         style={'marginTop': 150}
     ),
     # storage components to share dataframes between callbacks
-    dcc.Store(id='ODdf_original_full_store'),
-    dcc.Store(id='ODdf_original_store'),
-    dcc.Store(id='ODdf_update_store'),
-    dcc.Store(id='temp_df_store'),
-    dcc.Store(id='IODR_store', data=0),
+    dcc.Store(id='ODdf_original_full_store'),  # 8000 point dataframe as a json
+    dcc.Store(id='ODdf_original_store'),  # thinned OD dataframe before renaming and offset vals changed (json)
+    dcc.Store(id='ODdf_update_store'),  # final OD dataframe used for making graphs (json)
+    dcc.Store(id='temp_df_store'),  # temperature dataframe (json)
+    dcc.Store(id='IODR_store', data=0),  # IODR number store
     dcc.Store(data=[oldNames.copy(), oldNames.copy(), oldNames.copy()], id='newNames_store'),  # names of the tubes
-    dcc.Store(id='lnDataframes_store'),
-    dcc.Store(id='zoom_vals_store'),
+    dcc.Store(id='lnDataframes_store'),  # ln dataframes, could be put into one dataframe (json)
+    dcc.Store(id='zoom_vals_store'),  # values of zoom to maintain zoom levels when changing inputs for analysis
+    # stores the three table dataframes as jsons
     dcc.Store(
         id='table_store',
         data=[
+            # give the dataframes preset values for loading into the table initially
             pd.DataFrame(
                 data={
                     'name': oldNames,
@@ -387,6 +357,7 @@ app.layout = html.Div([
     Output('ODdf_original_full_store', 'data'),
     Output('ODdf_original_store', 'data'),
     Output('temp_df_store', 'data'),
+    Output('header-text', 'children'),
     Input('IODR1-button', 'n_clicks'),
     Input('IODR2-button', 'n_clicks'),
     Input('IODR3-button', 'n_clicks')
@@ -407,7 +378,10 @@ def update_which_IODR(IODR1_button, IODR2_button, IODR3_button):  # load data on
     ODdf_original, ODdf_original_full = get_OD_dataframe(device_num, chIDs, readAPIkeys)
     TEMPdf, TEMPdf_full = get_temp_data(device_num, chIDs, readAPIkeys)
 
-    return device_num, ODdf_original_full.to_json(date_format='iso', orient='table'), ODdf_original.to_json(date_format='iso', orient='table'), TEMPdf.to_json(date_format='iso', orient='table')
+    header_text = f"IODR #{device_num + 1} Viewer"
+
+    return device_num, ODdf_original_full.to_json(date_format='iso', orient='table'), ODdf_original.to_json(
+        date_format='iso', orient='table'), TEMPdf.to_json(date_format='iso', orient='table'), header_text
 
 
 @app.callback(
@@ -421,31 +395,34 @@ def update_which_IODR(IODR1_button, IODR2_button, IODR3_button):  # load data on
     State('test_datatable', 'data'),
 )
 def update_table_df(update_button, clear_button, device_num, tables_list, ODdf_original_json, datatable_dict):
+    # dataframe to store the info from the table
     table_df = pd.read_json(tables_list[device_num], orient='table')
     ODdf_original = pd.read_json(ODdf_original_json, orient='table')
 
+    # the original info from the table in a dataframe
     datatable_df = pd.DataFrame.from_records(datatable_dict)
 
-    newNames = datatable_df['name']
-    targets = datatable_df['target']
+    newNames = datatable_df['name']  # names from the table
+    targets = datatable_df['target']  # targets from the table
 
-
+    # checks which button was pressed
     changed_id = [p['prop_id'] for p in callback_context.triggered][0]
     if 'update-button' in changed_id:
-        for i in range(8):
+        for i in range(8):  # 8 for 8 tubes
             newName = newNames[i]
             target = targets[i]
             if newName is not None and newName != "":
-                table_df['name'].iloc[i] = f"{i+1}_" + newName
+                table_df['name'].iloc[
+                    i] = f"{i + 1}_" + newName  # add the tube num infront of name and put into storage dataframe
 
             if target is not None:
                 try:
-                    target = float(target)
+                    target = float(target)  # check if target string is a number
                 except:
-                    target = table_df['target'].iloc[i]
+                    target = table_df['target'].iloc[i]  # if not keep it the same
                 table_df['target'].iloc[i] = target
 
-        rename_tubes(ODdf_original, table_df['name'])
+        rename_tubes(ODdf_original, table_df['name'])  # rename the tubes
 
         try:
             print("Success!!!")
@@ -463,7 +440,7 @@ def update_table_df(update_button, clear_button, device_num, tables_list, ODdf_o
             lndf = format_ln_data(ODdf_original, i).to_json(date_format='iso', orient='table')
             lnDataframes.append(lndf)
 
-        estimates, r_vals = estimate_times(lnDataframes, linear_curve, targets)
+        estimates, r_vals = estimate_times(lnDataframes, targets)
 
         table_df['estimate'] = estimates
         table_df['r value'] = r_vals
@@ -478,14 +455,13 @@ def update_table_df(update_button, clear_button, device_num, tables_list, ODdf_o
 
         lnDataframes = []  # Get rid of store component and just do it all here
         for i in range(8):
-            lndf = format_ln_data(ODdf_original, i, blank_value=table_df['offset'].iloc[i]).to_json(date_format='iso',
-                                                                                                    orient='table')
+            lndf = format_ln_data(ODdf_original, i, offset_value=table_df['offset'].iloc[i]).to_json(date_format='iso',
+                                                                                                     orient='table')
             lnDataframes.append(lndf)
-        estimates, r_vals = estimate_times(lnDataframes, linear_curve, targets)
+        estimates, r_vals = estimate_times(lnDataframes, targets)
 
         table_df['estimate'] = estimates
         table_df['r value'] = r_vals
-
 
     tables_list[device_num] = table_df.to_json(date_format='iso', orient='table')
 
@@ -493,7 +469,7 @@ def update_table_df(update_button, clear_button, device_num, tables_list, ODdf_o
 
 
 @app.callback(
-    Output('test_datatable', 'data'),         # need to test this
+    Output('test_datatable', 'data'),  # need to test this
     Input('table_store', 'data'),
     State('IODR_store', 'data'),
     prevent_initial_call=True)
@@ -508,11 +484,11 @@ def update_table_display(tables_list, device_num):
         times.append(html.Div(children=estimates[i],
                               style={'color': 'green'} if r_vals[i] > 0.9 else {'color': 'red'}))
 
-    current_names = table_df['name']    # need to fix this so that it shows up correctly in table
+    current_names = table_df['name']  # need to fix this so that it shows up correctly in table
     new_names = [""] * 8
     for i in range(len(new_names)):
-        new_names[i] = current_names[i].replace(f"{i+1}_", "")
-        table_df['name'].iloc[i] = current_names[i].replace(f"{i+1}_", "")
+        new_names[i] = current_names[i].replace(f"{i + 1}_", "")
+        table_df['name'].iloc[i] = current_names[i].replace(f"{i + 1}_", "")
 
     return table_df.to_dict('records')
 
@@ -539,7 +515,6 @@ def download_csv(download_button, ODdf_original_full_json, device):
 def download_table(download_table_button, tables_list, device_num):
     table_df = pd.read_json(tables_list[device_num], orient='table')
     return dcc.send_data_frame(table_df.to_csv, f"IODR_{device_num + 1}_estimates_table.csv")
-
 
 
 @app.callback(
@@ -588,6 +563,7 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
     elif device_num == 2:
         figure1.update_layout(title="IODR #3")
 
+    index = 0
     # add the traces of each tube
     for col in ODdf_update.columns:
         figure1.add_trace(
@@ -596,9 +572,12 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
                 y=ODdf_update[col],
                 mode='markers',
                 marker_size=5,
+                marker=dict(
+                    color=colors[index]
+                ),
                 name=col,
                 meta=col,
-                # legendgroup="OD traces",
+                legendgroup=f"{col}",
                 # legendgrouptitle_text="OD traces",
                 hovertemplate='Time: %{x}' +
                               '<br>OD: %{y}<br>' +
@@ -606,7 +585,9 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
                               '<extra></extra>'),
             row=1,
             col=1)
+        index += 1
 
+    index = 0
     for col in ODdf_update.columns:
         figure1.add_trace(
             go.Scatter(
@@ -614,11 +595,16 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
                 y=np.log(ODdf_update[col]),
                 mode='markers',
                 marker_size=5,
-                name=f"{col} ln"
+                marker=dict(
+                    color=colors[index]
+                ),
+                name=f"{col} ln",
+                legendgroup=f"{col}"
             ),
             row=2,
             col=1
         )
+        index += 1
 
     # add the traces of the temperature
     for col in TEMPdf.columns:
@@ -645,6 +631,7 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
     figure1.update_yaxes(matches=None)
     # set the range for the temperature y-axis
     figure1.update_yaxes(range=[30, 60], row=3, col=1)
+    figure1.update_yaxes(range=[-6, 0], row=2, col=1)
     figure1.update_layout(
         height=1200,
         font=dict(
@@ -655,7 +642,9 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
         legend_groupclick='toggleitem',
         legend_itemsizing='constant',
         # legend_tracegroupgap=320,
-        hoverlabel_align='right')
+        hoverlabel_align='right'
+    )
+    figure1.update_annotations(font_size=20)
     # return the ODdf_original dataframe as a json to the store component
     return figure1
 
@@ -673,7 +662,7 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
     State('IODR_store', 'data')
 )
 def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_selection_slider, blank_value_input,
-                            tables_list, zoom_vals, device_num):
+                          tables_list, zoom_vals, device_num):
     # read the dataframe in from the storage component
     ODdf_update = pd.read_json(ODdf_update_json, orient='table')
     table_df = pd.read_json(tables_list[device_num], orient='table')
@@ -687,13 +676,12 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
 
         # format the data into a dataframe of just the selected tube's OD and lnOD data
         lnODdf = format_ln_data(ODdf_update, names.index(fit_tube),
-                                blank_value=float(blank_value_input))
+                                offset_value=float(blank_value_input))
     else:
-        lnODdf = format_ln_data(ODdf_update, 0, blank_value=float(blank_value_input))
+        lnODdf = format_ln_data(ODdf_update, 0, offset_value=float(blank_value_input))
 
     # use predict_curve function to predict the curve and get the last time point as a float
-    popt, last_time_point, r = predict_curve(lnODdf, linear_curve, data_selection_slider)
-    print("R value:  ", r)
+    popt, last_time_point = predict_curve(lnODdf, data_selection_slider)
 
     # create scatter plot for ln data
 
@@ -790,6 +778,8 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
         # change the time predict back to datatime objects
         t_predict = (t_predict * pd.Timedelta(1, 'h')) + ODdf_update.index[0]
 
+        r = round(popt[2], 3)
+        print("R value:  ", r)
         # add the fit line trace
         predict_figure.add_trace(
             go.Scatter(
@@ -814,7 +804,7 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
         predict_figure.add_trace(
             go.Scatter(
                 x=selection_df.index,
-                y=selection_df.lnOD,    # this one?
+                y=selection_df.lnOD,  # this one?
                 mode='markers',
                 name="Selection",
                 meta="Selection",
@@ -882,6 +872,8 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
         time_intercept_x_str = (time_intercept_x).strftime("%Y-%m-%d %H:%M:%S")
         # first_time_str = (first_time_time - pd.Timedelta(4, 'h')).strftime("%Y-%m-%d %H:%M:%S")
 
+        predict_figure.update_annotations(font_size=20)
+
         predict_figure.add_annotation(
             x=time_intercept_x_str,
             y=OD_target_slider,
@@ -931,4 +923,3 @@ def zoom_event(relayout_data):
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='0.0.0.0', port=8050)
-

@@ -22,13 +22,18 @@ from scipy import stats
 
 
 def get_OD_dataframe(device, chIDs, readAPIkeys):
-    """Returns a data frame containing the OD data for the specified device.
+    """Returns a tuple of dataframes from Thingspeak containing the OD data for the specified device.
+
+    return value 0 is the dataframe containing OD data for all tubes. Data older than two hours has been thinned.
+    return value 1 is the full dataframe containing the last 8000 time points
 
     Arguments:
-    device -- int device number (0-2)
-    newNames -- list of strings for the names of each tube (expected length 8)
 
-    relies on global variables chIDs and readAPIkeys
+    device -- int device number (0-2)
+
+    chIDs --  list of channel IDs from main file
+
+    readAPIkeys -- list of API keys from main file
     """
     # select the channel ID and read API key depending on which device is being used
     # chID = chIDs[devNum-1]
@@ -38,31 +43,28 @@ def get_OD_dataframe(device, chIDs, readAPIkeys):
     readAPIkey = readAPIkeys[device]
 
     # get data from Thingspeak
-    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=8000'.format(channel_id=chID)
+    myUrl = f'https://api.thingspeak.com/channels/{chID}/feeds.csv?results=8000'
     # myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?start=2021-09-20'.format(channel_id = chID)
     # print(myUrl)
     r = requests.get(myUrl)
 
     # put the thingspeak data in a dataframe
     df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
-
     # print("the first df", df)
 
     df2 = df.drop('entry_id', axis='columns')
-    # print(df2)
+
     # convert time string to datetime, and switch from UTC to Eastern time
-    # print(df2)
     df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
-    # print(df2)
+
     # remove the created_at column
     df3 = df2.drop('created_at', axis='columns')
-    # print(df3)
+
     # set index to time
     df4 = df3.set_index('time')
 
     first_time_time = df4.index[0]
     last_time_time = df4.index[-1]
-    # print("df4", df4)
     # print("first time ", first_time_time)
     # print("last time ", last_time_time)
 
@@ -71,18 +73,20 @@ def get_OD_dataframe(device, chIDs, readAPIkeys):
     df6 = df4.loc[(df4.index > first_time_time) & (df4.index < last_time_time - pd.Timedelta(2, 'h'))]
     df7 = df6.iloc[::10]
 
-    df8 = pd.concat([df7, df5])
+    selected_dataframe = pd.concat([df7, df5])
     # print("df8 ", df8)
+    full_dataframe = df4
 
-    return df8, df4
+    return selected_dataframe, full_dataframe
 
 
 # Not being used
 def format_OD_data(dataframe):
-    """Returns a dataframe with the time strings switched to datetime objects
+    """Returns a dataframe with the index set as the time (in datetime objects)
 
     Arguments:
-    dataframe -- pandas dataframe with time column as strings formatted for time
+
+    dataframe -- pandas dataframe directly from Thingspeak with 'created_at' column as strings formatted for time
     """
     df2 = dataframe.drop('entry_id', axis='columns')
     # convert time string to datetime, and switch from UTC to Eastern time
@@ -98,7 +102,11 @@ def rename_tubes(dataframe, newNames):
     List must be the same length and order as the columns you want to rename
 
     Arguments:
-    dataframe -- pandas dataframe (in this context, only columns are the traces)
+
+    dataframe -- pandas dataframe with the columns being the OD data of the tubes and the names of the columns being
+    the name of each tube
+
+    newNames -- list of names to rename the columns to. (must be in the order of how you want them renamed)
     """
     # rename tubes on update
     i = 0
@@ -112,12 +120,18 @@ def rename_tubes(dataframe, newNames):
 
 
 def get_temp_data(device, chIDs, readAPIkeys):
-    """Returns a data frame containing the temperature data for the specified device
+    """Returns a tuple of pandas dataframes containing the temperature data for the specified device with columns
+    Temp Int and Temp Ext
+
+    return value 0 is dataframe with older data having been thinned
+    value 1 is the full dataframe containing about the last 1500 data points
 
     Arguments:
     device -- int device number (0-2)
 
-    relies on global variables chIDs and readAPIkeys
+    chIDs --  list of channel IDs from main file
+
+    readAPIkeys -- list of API keys from main file
     """
     # select the channel ID and read API key for temperature data
     chID = chIDs[3]
@@ -126,7 +140,7 @@ def get_temp_data(device, chIDs, readAPIkeys):
     readAPIkey = readAPIkeys[3]
 
     # get data from Thingspeak
-    myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?results=8000'.format(channel_id=chID)
+    myUrl = f'https://api.thingspeak.com/channels/{chID}/feeds.csv?results=8000'
     # myUrl = 'https://api.thingspeak.com/channels/{channel_id}/feeds.csv?start=2021-09-20'.format(channel_id = chID)
     # print(myUrl)
     r = requests.get(myUrl)
@@ -162,7 +176,6 @@ def get_temp_data(device, chIDs, readAPIkeys):
 
     first_time_time = df3.index[0]
     last_time_time = df3.index[-1]
-    # print("df4", df3)
     # print("first time ", first_time_time)
     # print("last time ", last_time_time)
 
@@ -171,18 +184,23 @@ def get_temp_data(device, chIDs, readAPIkeys):
     df5 = df3.loc[(df3.index > first_time_time) & (df3.index < last_time_time - pd.Timedelta(2, 'h'))]
     df6 = df5.iloc[::10]
 
-    df8 = pd.concat([df6, df4])
+    selected_dataframe = pd.concat([df6, df4])
     # print("df8 ", df8)
+    full_dataframe = df3
 
-    return df8, df3
+    return selected_dataframe, full_dataframe
 
 
-def format_ln_data(dataframe, tube_num, blank_value=0):
-    """Returns a tuple of a ln transformed dataframe and the last time value
-    in the dataframe as a datetime object
+def format_ln_data(dataframe, tube_num, offset_value=0):
+    """Returns a pandas dataframe with columns OD and lnOD (log transformed data), index is the time values
 
     Arguments:
+
     dataframe -- pandas dataframe with time
+
+    tube_num -- number (int) of which tube to get data on
+
+    offset_value -- number for offset of OD data (default 0)
     """
     # print("ln dataframe", dataframe.head())
     # get the name of the tube
@@ -190,57 +208,16 @@ def format_ln_data(dataframe, tube_num, blank_value=0):
 
     # create new dataframe with tube_names and time index
     df2 = dataframe.loc[:, [tube_name]].dropna()
-    # df2['time'] = pd.to_datetime(df2['created_at']).dt.tz_convert('US/Eastern')
-    # df3 = df2.drop('created_at', axis = 'columns')
     # print(df2.head())
-    # print(type(df2.index[0]))
-
-    # print(df2.head())
-    # df2['time'] = pd.to_timedelta(df2['created_at'])/pd.Timedelta(1, 'h')
 
     # rename tube column to OD
     df2.rename({tube_name: 'OD'}, axis=1, inplace=True)
-    df2['OD'] = df2['OD'] + blank_value
+    df2['OD'] = df2['OD'] + offset_value
     # print("OD after blank val sub", df2['OD'])
     # calculate the natural log
-    df2['lnOD'] = np.log(df2['OD'])     # issues
+    df2['lnOD'] = np.log(df2['OD'])
     # print(df2['lnOD'])
-    # get rid of empty values and 0 OD values so ln is not inf
-    #df2['lnOD'].replace('', np.nan, inplace=True)
-    #df2['OD'].replace(0, np.nan, inplace=True)
-    #df2.dropna(inplace=True)
 
     return df2
 
 
-def predict_curve(dataframe, curve, slider_vals):
-    # copy the dataframe so not editing in place
-    df = dataframe.copy()
-    # change the index (time) to an hour number
-    df.index = (df.index - df.index[0]) / pd.Timedelta(1, 'h')  # this is done here so data gets displayed in datetime
-    # get the last time point in a float while here for displaying prediction
-    last_time_point = df.index[-1]
-    # print(f"last time point val: {last_time_point}")
-    # print(f"slider val: {slider_vals}")
-    # filter data so that only the data within the range is used
-    df2 = df.loc[(df.index > (last_time_point + slider_vals[0])) & (df.index < last_time_point + slider_vals[1])]
-    df2.dropna(inplace=True)
-
-    print("begin selection: ", (last_time_point + slider_vals[0]))
-    print("end selection: ", last_time_point + slider_vals[1])
-
-    print("cleaned lnOD ")
-    print("df2", df2)
-    curve_info = [0, 0]
-    if len(df2['lnOD']) > 2:
-        # do the curve fit
-        # popt, pcov = curve_fit(curve, df2.index, df2['lnOD'])
-        curve_info[0], curve_info[1], r, p, se = linregress(df2.index, df2['lnOD'])
-        # print("popt", popt)
-        print("slope, intercept: ", curve_info)
-    else:
-        print('no data')
-        # popt = np.array([])  # need to figure out what this should actually be
-        curve_info = []
-        r = 0
-    return curve_info, last_time_point, r

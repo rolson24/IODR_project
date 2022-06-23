@@ -2,12 +2,12 @@ from dash import Dash, dcc, html, Input, Output, State, callback_context
 from plotly.subplots import make_subplots
 from whitenoise import WhiteNoise
 
-from functions import get_OD_dataframe as get_OD_dataframe
-from functions import get_temp_data as get_temp_data
-from functions import format_OD_data as format_OD_data
-from functions import format_ln_data as format_ln_data
-from functions import rename_tubes as rename_tubes
-from functions import predict_curve as predict_curve
+from get_data_funs import get_OD_dataframe as get_OD_dataframe
+from get_data_funs import get_temp_data as get_temp_data
+from get_data_funs import format_OD_data as format_OD_data
+from get_data_funs import format_ln_data as format_ln_data
+from get_data_funs import rename_tubes as rename_tubes
+from get_data_funs import predict_curve as predict_curve
 
 import numpy as np
 import pandas as pd
