@@ -309,7 +309,7 @@ app.layout = html.Div([
     dcc.Store(id='ODdf_original_store'),  # thinned OD dataframe before renaming and offset vals changed (json)
     dcc.Store(id='ODdf_update_store'),  # final OD dataframe used for making graphs (json)
     dcc.Store(id='temp_df_store'),  # temperature dataframe (json)
-    dcc.Store(id='IODR_store', data=0),  # IODR number store
+    dcc.Store(id='IODR_store', data=1),  # IODR number store
     dcc.Store(data=[oldNames.copy(), oldNames.copy(), oldNames.copy()], id='newNames_store'),  # names of the tubes
     dcc.Store(id='lnDataframes_store'),  # ln dataframes, could be put into one dataframe (json)
     dcc.Store(id='zoom_vals_store'),  # values of zoom to maintain zoom levels when changing inputs for analysis
@@ -373,7 +373,7 @@ def update_which_IODR(IODR1_button, IODR2_button, IODR3_button):  # load data on
     elif 'IODR3-button' in changed_id:
         device_num = 2
     else:
-        device_num = 0
+        device_num = 1
 
     ODdf_original, ODdf_original_full = get_OD_dataframe(device_num, chIDs, readAPIkeys)
     TEMPdf, TEMPdf_full = get_temp_data(device_num, chIDs, readAPIkeys)
@@ -398,12 +398,15 @@ def update_table_df(update_button, clear_button, device_num, tables_list, ODdf_o
     # dataframe to store the info from the table
     table_df = pd.read_json(tables_list[device_num], orient='table')
     ODdf_original = pd.read_json(ODdf_original_json, orient='table')
+    print("beginnninggg!!!")
+    print(ODdf_original)
 
     # the original info from the table in a dataframe
     datatable_df = pd.DataFrame.from_records(datatable_dict)
 
     newNames = datatable_df['name']  # names from the table
     targets = datatable_df['target']  # targets from the table
+    print(f"targets {targets}")
 
     # checks which button was pressed
     changed_id = [p['prop_id'] for p in callback_context.triggered][0]
@@ -452,6 +455,7 @@ def update_table_df(update_button, clear_button, device_num, tables_list, ODdf_o
         table_df['offset'] = [0] * 8
     else:
         rename_tubes(ODdf_original, table_df['name'])
+        targets = [.5] * 8
 
         lnDataframes = []  # Get rid of store component and just do it all here
         for i in range(8):
@@ -482,7 +486,7 @@ def update_table_display(tables_list, device_num):
     print("estimate times values", estimates)
     for i in range(len(estimates)):  # need to display this in a different callback
         times.append(html.Div(children=estimates[i],
-                              style={'color': 'green'} if r_vals[i] > 0.9 else {'color': 'red'}))
+                              style={'color': 'green'} if float(r_vals[i]) > 0.9 else {'color': 'red'}))
 
     current_names = table_df['name']  # need to fix this so that it shows up correctly in table
     new_names = [""] * 8

@@ -1,3 +1,22 @@
+import numpy as np
+import pandas as pd
+import urllib.request
+import requests
+import json
+import io
+import plotly.graph_objects as go
+import plotly.express as px
+
+from rq import Queue
+from worker import conn
+
+import logging
+from scipy.signal import find_peaks
+from scipy.optimize import curve_fit
+from scipy.stats import linregress
+from scipy import stats
+
+
 def predict_curve(dataframe, data_range):
     """Returns a tuple of the list of curve information and the last collected data point for displaying the curve
 
@@ -30,7 +49,7 @@ def predict_curve(dataframe, data_range):
         # popt, pcov = curve_fit(curve, df2.index, df2['lnOD']) # used if using a different estimate curve than linregress
         curve_info[0], curve_info[1], curve_info[2], p, se = linregress(df2.index, df2['lnOD'])
         # print("popt", popt)
-        print("slope, intercept: ", curve_info)
+        print("slope, intercept, r_val: ", curve_info)
     else:
         print('no data')
         # popt = np.array([])  # need to figure out what this should actually be
@@ -69,19 +88,20 @@ def estimate_times(lnDataframes, target_vals):
 
             first_time_time = lnODdf.index[0]
             # last_time_time = lnODdf.index[-1]
-
+            print(target_vals[i])
             # get where the ln curve intercepts the target line
             intercept_x = (np.log(float(target_vals[i])) - curve_info[1]) / curve_info[0]  # solve for x = (y - b)/slope
+            print(intercept_x)
             # transform from float value intercept to datetime object
             time_intercept_x = (intercept_x * pd.Timedelta(1, 'h')) + first_time_time
             time_intercept_x_str = (time_intercept_x).strftime("%Y-%m-%d %H:%M:%S")     # from datetime object to string
 
             estimates.append(time_intercept_x_str)
             r = curve_info[2]
-            r_vals.append(round(r**2, 3))     # append r^2 values
+            r_vals.append(f"{r**2}"[0:5])     # append r^2 values
 
         else:
             estimates.append("none")
-            r_vals.append(0)
+            r_vals.append("0")
     return estimates, r_vals
 
