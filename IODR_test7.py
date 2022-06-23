@@ -64,7 +64,7 @@ server.wsgi_app = WhiteNoise(server.wsgi_app, root='static/c')
 app.layout = html.Div([
     # this is the sticky header division at the top of the page
     html.Div(children=[
-        html.H1("IODR #1 Viewer", id='header-text',
+        html.H1("IODR #2 Viewer", id='header-text',
                 style={'textAlign': 'left', 'height': 70, 'width': '27%', 'float': 'left', 'marginLeft': '3%'}),
         html.Div(children=[
             html.Button(
@@ -640,7 +640,7 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
         height=1200,
         font=dict(
             family='Open Sans',
-            size=20
+            size=15
         ),
         legend_itemdoubleclick='toggleothers',
         legend_groupclick='toggleitem',
@@ -649,6 +649,36 @@ def update_graph(ODdf_update_store, tables_list, temp_df_store, device_num):
         hoverlabel_align='right'
     )
     figure1.update_annotations(font_size=20)
+    figure1.update_xaxes(
+        title_text="Time",
+        row=1,
+        col=1
+    )
+    figure1.update_xaxes(
+        title_text="Time",
+        row=2,
+        col=1
+    )
+    figure1.update_xaxes(
+        title_text="Time",
+        row=3,
+        col=1
+    )
+    figure1.update_yaxes(
+        title_text="OD",
+        row=1,
+        col=1
+    )
+    figure1.update_yaxes(
+        title_text="ln OD",
+        row=2,
+        col=1
+    )
+    figure1.update_yaxes(
+        title_text="Temp (F)",
+        row=3,
+        col=1
+    )
     # return the ODdf_original dataframe as a json to the store component
     return figure1
 
@@ -895,7 +925,7 @@ def update_predict_graphs(fit_tube, ODdf_update_json, OD_target_slider, data_sel
             bgcolor="blue",
             opacity=.5,
         )
-    predict_figure.update_layout(legend_tracegroupgap=320, font=dict(size=20))
+    predict_figure.update_layout(legend_tracegroupgap=320, font=dict(size=15, family="Open Sans"))
     predict_figure.add_hline(y=OD_target_slider, line_width=2, line_dash='dash', row=1, col=1)
     if len(zoom_vals) != 0:
         if zoom_vals[0] is True:
