@@ -63,22 +63,27 @@ def get_OD_dataframe(device, chIDs, readAPIkeys):
     # set index to time
     df4 = df3.set_index('time')
 
-    first_time_time = df4.index[0]
-    last_time_time = df4.index[-1]
-    # print("first time ", first_time_time)
-    # print("last time ", last_time_time)
 
-    df5 = df4.loc[(df4.index > (last_time_time - pd.Timedelta(2, 'h'))) & (df4.index < last_time_time)]
 
-    df6 = df4.loc[(df4.index > first_time_time) & (df4.index < last_time_time - pd.Timedelta(2, 'h'))]
-    df7 = df6.iloc[::10]
 
-    selected_dataframe = pd.concat([df7, df5])
     # print("df8 ", df8)
     full_dataframe = df4
 
-    return selected_dataframe, full_dataframe
+    return full_dataframe
 
+def cull_data(dataframe):
+    first_time_time = dataframe.index[0]
+    last_time_time = dataframe.index[-1]
+    # print("first time ", first_time_time)
+    # print("last time ", last_time_time)
+
+    df5 = dataframe.loc[(dataframe.index > (last_time_time - pd.Timedelta(2, 'h'))) & (dataframe.index < last_time_time)]
+
+    df6 = dataframe.loc[(dataframe.index > first_time_time) & (dataframe.index < last_time_time - pd.Timedelta(2, 'h'))]
+    df7 = df6.iloc[::10]
+
+    selected_dataframe = pd.concat([df7, df5])
+    return selected_dataframe
 
 # Not being used
 def format_OD_data(dataframe):
@@ -179,16 +184,9 @@ def get_temp_data(device, chIDs, readAPIkeys):
     # print("first time ", first_time_time)
     # print("last time ", last_time_time)
 
-    df4 = df3.loc[(df3.index > (last_time_time - pd.Timedelta(2, 'h'))) & (df3.index < last_time_time)]
-
-    df5 = df3.loc[(df3.index > first_time_time) & (df3.index < last_time_time - pd.Timedelta(2, 'h'))]
-    df6 = df5.iloc[::10]
-
-    selected_dataframe = pd.concat([df6, df4])
-    # print("df8 ", df8)
     full_dataframe = df3
 
-    return selected_dataframe, full_dataframe
+    return full_dataframe
 
 
 def format_ln_data(dataframe, tube_num, offset_value=0):
